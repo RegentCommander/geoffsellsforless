@@ -166,6 +166,39 @@ textarea{min-height:100px;resize:vertical;line-height:1.6;}
 .btn-find-more:hover{background:rgba(200,168,75,.2);}
 .btn-find-more:disabled{opacity:.4;cursor:not-allowed;}
 
+
+/* ── INVENTORY PAGE ── */
+.inv-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
+.inv-toolbar-left{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.inv-seg{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:7px;overflow:hidden;}
+.inv-seg button{background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;padding:7px 14px;cursor:pointer;}
+.inv-seg button.on{background:var(--gold);color:#0d1117;}
+.inv-status{font-size:11px;color:var(--muted);font-style:italic;}
+.btn-sync{background:var(--gold);color:#0d1117;border:none;border-radius:7px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;}
+.btn-sync:hover{opacity:.9;}
+.btn-sync:disabled{opacity:.4;cursor:not-allowed;}
+.inv-section{margin-bottom:28px;}
+.inv-section-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.inv-section-title{font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;}
+.inv-count{font-size:11px;color:var(--muted);background:var(--surface2);border-radius:20px;padding:2px 9px;}
+.diff-legend{display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
+.diff-pill{font-size:10px;font-weight:700;border-radius:4px;padding:3px 8px;}
+.diff-add{background:rgba(46,166,75,.2);color:#4fd97a;}
+.diff-remove{background:rgba(192,57,43,.2);color:#e87070;}
+.diff-change{background:rgba(200,168,75,.2);color:var(--gold);}
+.diff-ok{background:var(--surface2);color:var(--muted);}
+table.inv-table{width:100%;border-collapse:collapse;font-size:12px;}
+table.inv-table th{text-align:left;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
+table.inv-table td{padding:8px 10px;border-bottom:1px solid rgba(42,49,71,.5);color:var(--text);vertical-align:top;}
+table.inv-table tr:hover td{background:var(--surface2);}
+table.inv-table tr.row-add td{background:rgba(46,166,75,.07);}
+table.inv-table tr.row-remove td{background:rgba(192,57,43,.07);text-decoration:line-through;color:var(--muted);}
+table.inv-table tr.row-change td{background:rgba(200,168,75,.06);}
+.diff-tag{font-size:9px;font-weight:700;border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:middle;}
+.inv-empty{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
+.inv-filter{background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;padding:6px 10px;}
+.inv-filter:focus{outline:none;border-color:var(--gold);}
+
 /* spinner */
 .spin-wrap{text-align:center;padding:40px 20px;}
 .spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
@@ -195,6 +228,7 @@ textarea{min-height:100px;resize:vertical;line-height:1.6;}
     <button class="nav-tab active" onclick="showPage('new')">New Customer</button>
     <button class="nav-tab" onclick="showPage('past')">Past Customers</button>
     <button class="nav-tab" onclick="showPage('settings')">Settings</button>
+    <button class="nav-tab" onclick="showPage('inventory')">📋 Inventory</button>
     <button class="gear" onclick="openKeyModal()" title="API Key">⚙</button>
   </div>
 </nav>
@@ -318,6 +352,46 @@ textarea{min-height:100px;resize:vertical;line-height:1.6;}
   </div>
 </div>
 
+
+<!-- ── PAGE: INVENTORY ── -->
+<div class="page" id="page-inventory">
+  <div class="inv-toolbar">
+    <div class="inv-toolbar-left">
+      <div class="inv-seg" id="inv-seg">
+        <button class="on" onclick="switchInvTab('new',this)">New Cars</button>
+        <button onclick="switchInvTab('used',this)">Used Cars</button>
+      </div>
+      <input class="inv-filter" type="text" placeholder="Filter by model, stock, color…" oninput="filterInvTable(this.value)" id="inv-filter-box">
+      <div class="inv-status" id="inv-sync-status">Not yet synced from sheet</div>
+    </div>
+    <button class="btn-sync" id="btn-sync" onclick="syncFromSheet()">⬇ Update from Google Sheet</button>
+  </div>
+
+  <!-- DIFF SUMMARY -->
+  <div id="inv-diff-summary" style="display:none;margin-bottom:16px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
+    <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">Last Sync Results</div>
+    <div id="inv-diff-detail" style="font-size:12px;color:var(--muted);line-height:1.8;"></div>
+  </div>
+
+  <!-- SHEET DATA -->
+  <div class="inv-section">
+    <div class="inv-section-hdr">
+      <div class="inv-section-title">📄 Google Sheet (Live)</div>
+      <div class="inv-count" id="sheet-count">—</div>
+    </div>
+    <div id="sheet-table-wrap"><div class="inv-empty">Click "Update from Google Sheet" to load live data.</div></div>
+  </div>
+
+  <!-- APP DATA -->
+  <div class="inv-section">
+    <div class="inv-section-hdr">
+      <div class="inv-section-title">🖥 Currently in App</div>
+      <div class="inv-count" id="app-count">—</div>
+    </div>
+    <div id="app-table-wrap"></div>
+  </div>
+</div>
+
 <!-- ── PAGE: CUSTOMER DETAIL ── -->
 <div class="page" id="page-customer">
   <div class="cust-page-hdr">
@@ -353,6 +427,27 @@ let lastMatches = [];   // current match results
 let pendingSave = null; // customer object ready to save
 let editIdx = null;     // which customer is open in modal
 let modalDown = 500;    // deal calc down payment in modal
+let customerCache = []; // in-memory customer list (loaded from Sheets)
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzlFx27IHCyfrayaCT03Ty5fjrEK1iy4BPH_corYBUONcPd4XgZh_J0ZiitAQ2gRadG/exec';
+
+// ── SHEETS API ────────────────────────────────────────────────────────────────
+async function sheetsGet(params){
+  const url=SCRIPT_URL+'?'+new URLSearchParams(params);
+  const res=await fetch(url);
+  return res.json();
+}
+async function sheetsPost(body){
+  const res=await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(body)});
+  return res.json();
+}
+function showToast(msg,color='var(--gold)'){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;transition:opacity .3s;';document.body.appendChild(t);}
+  t.style.background=color;t.style.color=color==='var(--gold)'?'#0d1117':'#fff';
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',2500);
+}
 
 const TAX  = ()=>parseFloat(document.getElementById('set-tax')?.value||'0.06');
 const TERM = ()=>parseInt(document.getElementById('set-term')?.value||'72');
@@ -364,7 +459,7 @@ function showPage(p){
   document.getElementById('page-'+p).classList.add('active');
   const tabs=['new','past','settings'];
   document.querySelectorAll('.nav-tab')[tabs.indexOf(p)]?.classList.add('active');
-  if(p==='past') renderPast();
+  if(p==='past') loadCustomers();
 }
 
 // ── STEPPERS ─────────────────────────────────────────────────────────────────
@@ -660,20 +755,29 @@ function toggleStar(stock,btn){
 }
 
 // ── SAVE CUSTOMER ─────────────────────────────────────────────────────────────
-function saveCustomer(){
+async function saveCustomer(){
   if(!pendingSave)return;
+  const btn=document.querySelector('.btn-save-customer');
+  btn.disabled=true;btn.textContent='Saving…';
   // Only keep picks that were starred — rest are forgotten
   const favSet=new Set(pendingSave.favorites);
   pendingSave.picks=lastMatches
     .filter(m=>favSet.has(m.stock))
     .map(m=>({stock:m.stock,title:m.title,subtitle:m.subtitle,reason:m.reason,price_display:m.price_display,tags:m.tags}));
-  const h=JSON.parse(localStorage.getItem('dch')||'[]');
-  h.unshift(pendingSave);
-  localStorage.setItem('dch',JSON.stringify(h.slice(0,200)));
-  pendingSave=null;
-  document.getElementById('save-bar').style.display='none';
-  newCustomer();
-  showPage('past');
+  try{
+    const result=await sheetsPost({action:'save',customer:pendingSave});
+    if(result.error)throw new Error(result.error);
+    pendingSave.id=result.id;
+    customerCache.unshift(pendingSave);
+    showToast('✓ Customer saved');
+    pendingSave=null;
+    document.getElementById('save-bar').style.display='none';
+    newCustomer();
+    showPage('past');
+  }catch(e){
+    showToast('Save failed: '+e.message,'#c0392b');
+    btn.disabled=false;btn.textContent='Save & continue';
+  }
 }
 
 function newCustomer(){
@@ -689,35 +793,55 @@ function newCustomer(){
 }
 
 // ── PAST CUSTOMERS ────────────────────────────────────────────────────────────
-function renderPast(filter=''){
-  const h=JSON.parse(localStorage.getItem('dch')||'[]');
+async function loadCustomers(){
   const el=document.getElementById('past-list');
+  el.innerHTML='<div class="hist-empty"><div class="spinner" style="margin:20px auto;width:24px;height:24px;border-width:2px;"></div>Loading customers…</div>';
+  try{
+    const data=await sheetsGet({action:'getAll'});
+    if(data.error)throw new Error(data.error);
+    customerCache=Array.isArray(data)?data.reverse():[];
+    renderPast();
+  }catch(e){
+    el.innerHTML='<div class="hist-empty" style="color:var(--red)">Could not load customers: '+esc(e.message)+'<br><br><button class="btn-outline" onclick="loadCustomers()">Retry</button></div>';
+  }
+}
+
+function renderPast(filter=''){
+  const el=document.getElementById('past-list');
+  const h=customerCache;
   if(!h.length){el.innerHTML='<div class="hist-empty">No customers saved yet.<br>Complete a match and hit "Save & continue."</div>';return;}
   const q=(filter||'').toLowerCase();
   const list=q?h.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.email||'').toLowerCase().includes(q)||(c.notes||'').toLowerCase().includes(q)):h;
   if(!list.length){el.innerHTML='<div class="hist-empty">No customers match that search.</div>';return;}
-  el.innerHTML=list.map(c=>{
-    const ri=h.indexOf(c);
+  el.innerHTML=list.map((c,ri)=>{
     const shown=(c.picks||[]).slice(0,3).map(p=>p.title).join(' · ');
     const more=(c.picks||[]).length>3?` +${c.picks.length-3} more`:'';
     return`<div class="hist-card" onclick="openModal(${ri})">
       <div class="hist-top"><div class="hist-name">${esc(c.name||'Unknown')}</div><div class="hist-date">${esc(c.date||'')}</div></div>
       <div class="hist-detail">
         ${c.email?'📧 '+esc(c.email)+'<br>':''}
-        <b>Vehicles shown:</b> ${esc(shown)}${esc(more)}
+        <b>Vehicles shown:</b> ${esc(shown)||'None yet'}${esc(more)}
         ${c.notes?'<br><span style="font-style:italic">'+esc(c.notes.slice(0,80))+(c.notes.length>80?'…':'')+'</span>':''}
       </div>
     </div>`;
   }).join('');
 }
 
-function clearAll(){if(confirm('Clear all customer history? Cannot be undone.')){localStorage.removeItem('dch');renderPast();}}
+async function clearAll(){
+  if(!confirm('Clear ALL customers from the database? This cannot be undone.'))return;
+  showToast('Clearing…');
+  for(const c of customerCache){
+    if(c.id)await sheetsPost({action:'delete',id:c.id});
+  }
+  customerCache=[];
+  renderPast();
+  showToast('All customers cleared');
+}
 
 // ── CUSTOMER MODAL ────────────────────────────────────────────────────────────
 function openModal(idx){
   editIdx=idx;
-  const h=JSON.parse(localStorage.getItem('dch')||'[]');
-  const c=h[idx];if(!c)return;
+  const c=customerCache[idx];if(!c)return;
   document.getElementById('m-name').textContent=c.name||'Unknown';
   document.getElementById('m-date').textContent='📅 '+c.date;
   renderModalBody(c,idx);
@@ -873,10 +997,9 @@ function closeModal(){
   showPage('past');
 }
 
-function saveModalChanges(){
+async function saveModalChanges(){
   if(editIdx===null)return;
-  const h=JSON.parse(localStorage.getItem('dch')||'[]');
-  const c=h[editIdx];if(!c)return;
+  const c=customerCache[editIdx];if(!c)return;
   c.name=document.getElementById('m-cname').value.trim()||c.name;
   c.email=document.getElementById('m-cemail').value.trim();
   c.budgetLo=parseFloat(document.getElementById('m-budlo').value)||c.budgetLo;
@@ -886,21 +1009,23 @@ function saveModalChanges(){
   c.down=modalDown;
   c.paytype=document.getElementById('m-paytype').value;
   c.tradeIn=parseFloat(document.getElementById('m-trade').value)||0;
-  // Append any new update notes to the original notes
   const updateText=document.getElementById('m-notes-update')?.value.trim();
   if(updateText){
     const ts=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
     c.notes=(c.notes?c.notes+'\n\n':'')+`[Update ${ts}]: ${updateText}`;
     document.getElementById('m-notes-update').value='';
-    // Refresh the notes section display
-    openModal(editIdx);return;
   }
-  localStorage.setItem('dch',JSON.stringify(h));
-  document.getElementById('m-name').textContent=c.name;
-  updateModalEst(editIdx);
   const btn=document.querySelector('.btn-modal-save');
-  btn.textContent='✓ Saved';btn.style.background='var(--green)';
-  setTimeout(()=>{btn.textContent='Save';btn.style.background='';},1500);
+  btn.disabled=true;btn.textContent='Saving…';
+  try{
+    const r=await sheetsPost({action:'update',customer:c});
+    if(r.error)throw new Error(r.error);
+    showToast('✓ Saved');
+    document.getElementById('m-name').textContent=c.name;
+    updateModalEst(editIdx);
+    if(updateText)openModal(editIdx);
+  }catch(e){showToast('Save failed: '+e.message,'#c0392b');}
+  btn.disabled=false;btn.textContent='Save';
 }
 
 function getModalTermRate(){
@@ -911,8 +1036,7 @@ function getModalTermRate(){
 }
 
 function updateModalEst(idx){
-  const h=JSON.parse(localStorage.getItem('dch')||'[]');
-  const c=h[idx];if(!c)return;
+  const c=customerCache[idx];if(!c)return;
   const lo=parseFloat(document.getElementById('m-budlo')?.value)||c.budgetLo||0;
   const hi=parseFloat(document.getElementById('m-budhi')?.value)||c.budgetHi||0;
   const {term,rate}=getModalTermRate();
@@ -937,13 +1061,12 @@ function updateModalEst(idx){
   if(maxEl)maxEl.textContent=maxV?`$${maxV.toLocaleString()} incl. 6% PA tax`:'N/A (Cash)';
 }
 
-function removeFav(idx,stock){
-  const h=JSON.parse(localStorage.getItem('dch')||'[]');
-  const c=h[idx];if(!c)return;
+async function removeFav(idx,stock){
+  const c=customerCache[idx];if(!c)return;
   c.favorites=(c.favorites||[]).filter(s=>s!==stock);
-  localStorage.setItem('dch',JSON.stringify(h));
   const el=document.getElementById('fv-'+stock);
   if(el)el.remove();
+  await sheetsPost({action:'update',customer:c});
 }
 
 function searchInvAdd(q,idx){
@@ -956,8 +1079,7 @@ function searchInvAdd(q,idx){
 }
 
 function addFavFromSearch(idx,stock){
-  const h=JSON.parse(localStorage.getItem('dch')||'[]');
-  const c=h[idx];if(!c)return;
+  const c=customerCache[idx];if(!c)return;
   const v=ALL[stock];if(!v)return;
   if(!(c.favorites||[]).includes(stock)){
     c.favorites=c.favorites||[];
@@ -967,25 +1089,25 @@ function addFavFromSearch(idx,stock){
       c.picks=c.picks||[];
       c.picks.push({stock,title:v.fullName,subtitle:`Stock #${stock} · ${v.color}`,reason:'',price_display:'$'+v.msrp.toLocaleString(),tags:[]});
     }
-    localStorage.setItem('dch',JSON.stringify(h));
+    sheetsPost({action:'update',customer:c});
     refreshFavsSection(c,idx);
   }
   document.getElementById('inv-dd').style.display='none';
 }
 
-function deleteCustomer(idx){
+async function deleteCustomer(idx){
   if(!confirm('Delete this customer? Cannot be undone.'))return;
-  const h=JSON.parse(localStorage.getItem('dch')||'[]');
-  h.splice(idx,1);
-  localStorage.setItem('dch',JSON.stringify(h));
+  const c=customerCache[idx];if(!c)return;
+  customerCache.splice(idx,1);
   closeModal();renderPast();
+  if(c.id)await sheetsPost({action:'delete',id:c.id});
+  showToast('Customer deleted');
 }
 
 // ── REGEN AI NOTES ────────────────────────────────────────────────────────────
 async function regenNotes(idx){
   if(!apiKey){openKeyModal();return;}
-  const h=JSON.parse(localStorage.getItem('dch')||'[]');
-  const c=h[idx];if(!c)return;
+  const c=customerCache[idx];if(!c)return;
   const el=document.getElementById('m-ainotes');
   el.innerHTML='<div class="spinner" style="margin:10px auto;width:24px;height:24px;border-width:2px;"></div>';
 
@@ -1019,7 +1141,7 @@ Be specific, professional, and actionable. Write as notes Geoff would actually u
     if(data.error)throw new Error(data.error.message);
     const text=data.content[0].text.trim();
     c.aiNotes=text;
-    localStorage.setItem('dch',JSON.stringify(h));
+    sheetsPost({action:'update',customer:c});
     el.innerHTML=text.split('\n\n').map(p=>`<p>${esc(p)}</p>`).join('');
   }catch(e){el.innerHTML=`<span style="color:var(--red)">${esc(e.message)}</span>`;}
 }
@@ -1027,8 +1149,7 @@ Be specific, professional, and actionable. Write as notes Geoff would actually u
 // ── FIND MORE FROM PORTAL ────────────────────────────────────────────────────
 async function findMoreFromModal(idx){
   if(!apiKey){openKeyModal();return;}
-  const h=JSON.parse(localStorage.getItem('dch')||'[]');
-  const c=h[idx];if(!c)return;
+  const c=customerCache[idx];if(!c)return;
   const btn=document.getElementById('btn-findmore');btn.disabled=true;
   const out=document.getElementById('m-rematch-out');
   out.innerHTML='<div class="spin-wrap"><div class="spinner"></div></div>';
@@ -1154,7 +1275,7 @@ JSON only — no other text: {"matches":[{"rank":1,"stock":"","title":"","subtit
     c.budgetLo=curBudLo; c.budgetHi=curBudHi;
     c.house=curHouse; c.down=curDown; c.tradeIn=curTrade;
     c.paytype=document.getElementById('m-paytype')?.value||c.paytype;
-    localStorage.setItem('dch',JSON.stringify(h));
+    sheetsPost({action:'update',customer:c});
 
     let html=`<div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;">10 New Matches · Updated Budget $${curBudLo.toLocaleString()}–$${curBudHi.toLocaleString()}/mo</div><div class="res-grid">`;
     newPicks.forEach((m,i)=>{
@@ -1187,13 +1308,12 @@ JSON only — no other text: {"matches":[{"rank":1,"stock":"","title":"","subtit
 }
 
 function addFavFromRematch(idx,stock,btn,pick){
-  const h=JSON.parse(localStorage.getItem('dch')||'[]');
-  const c=h[idx];if(!c)return;
+  const c=customerCache[idx];if(!c)return;
   c.favorites=c.favorites||[];
   if(!c.favorites.includes(stock)){
     c.favorites.push(stock);
     if(!(c.picks||[]).find(p=>p.stock===stock)){c.picks=c.picks||[];c.picks.push(pick);}
-    localStorage.setItem('dch',JSON.stringify(h));
+    sheetsPost({action:'update',customer:c});
     btn.textContent='★ Saved';btn.classList.add('on');
     // Only refresh the favs section — don't wipe the whole page
     refreshFavsSection(c,idx);

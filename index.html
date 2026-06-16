@@ -1374,6 +1374,7 @@ function refreshFavsSection(c,idx){
 
 // ── INVENTORY ─────────────────────────────────────────────────────────────────
 let invData = []; // synced inventory array
+let invSort = {col:null, dir:1}; // current sort column and direction
 
 const SHEET_CSV_NEW = 'https://docs.google.com/spreadsheets/d/1fyaBg6or2oq2RH4ioth5RUUvmhBuP8Rn9Wlubh-7PuM/gviz/tq?tqx=out:csv&sheet=NEW%20INVENTORY';
 const SHEET_CSV_USED = 'https://docs.google.com/spreadsheets/d/1fyaBg6or2oq2RH4ioth5RUUvmhBuP8Rn9Wlubh-7PuM/gviz/tq?tqx=out:csv&sheet=USED%20INVENTORY';
@@ -1503,6 +1504,16 @@ function rebuildALL(inv){
   inv.forEach(v=>{ ALL[v.stock] = v; });
 }
 
+function sortInv(col){
+  if(invSort.col===col){
+    invSort.dir *= -1; // flip direction
+  } else {
+    invSort.col=col;
+    invSort.dir=1; // default ascending
+  }
+  renderInvTable();
+}
+
 function invPillToggle(el, groupId, multiSelect){
   const group = document.getElementById(groupId);
   if(multiSelect){
@@ -1595,6 +1606,18 @@ function renderInvTable(){
     return;
   }
 
+  // Sort the filtered array
+  if(invSort.col!==null){
+    filtered.sort((a,b)=>{
+      let va=a[invSort.col], vb=b[invSort.col];
+      if(typeof va==='string') va=va.toLowerCase();
+      if(typeof vb==='string') vb=vb.toLowerCase();
+      if(va<vb)return -1*invSort.dir;
+      if(va>vb)return 1*invSort.dir;
+      return 0;
+    });
+  }
+
   const rows = filtered.map(v=>{
     const typeBadge = v.type==='new'
       ? `<span class="inv-badge inv-b-new">NEW</span>`
@@ -1614,10 +1637,19 @@ function renderInvTable(){
     </tr>`;
   }).join('');
 
+  function sortIcon(col){ return invSort.col===col ? (invSort.dir===1?' ↑':' ↓') : ' ↕'; }
+
   wrap.innerHTML = `<div style="overflow-x:auto;"><table class="inv-table">
     <thead><tr>
-      <th>Type</th><th>Stock #</th><th>Year</th><th>Model</th>
-      <th>Trim</th><th>Drive</th><th>Color</th><th>Miles</th><th>MSRP</th>
+      <th onclick="sortInv('type')">Type${sortIcon('type')}</th>
+      <th onclick="sortInv('stock')">Stock #${sortIcon('stock')}</th>
+      <th onclick="sortInv('year')">Year${sortIcon('year')}</th>
+      <th onclick="sortInv('model')">Model${sortIcon('model')}</th>
+      <th onclick="sortInv('trim')">Trim${sortIcon('trim')}</th>
+      <th onclick="sortInv('dt')">Drive${sortIcon('dt')}</th>
+      <th onclick="sortInv('color')">Color${sortIcon('color')}</th>
+      <th onclick="sortInv('miles')">Miles${sortIcon('miles')}</th>
+      <th onclick="sortInv('msrp')">MSRP${sortIcon('msrp')}</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;

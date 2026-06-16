@@ -1529,6 +1529,7 @@ function parseNewCSV(text){
       vin:c[8]||'', status:(c[10]||'AVAILABLE'),
       pics:(c[11]||''), pdi:(c[12]||''), days:parseInt(c[13])||0,
       invoice:cleanNum(c[14]), msrp:cleanNum(c[15]),
+      notes:(c[16]||''), features:(c[17]||''),
       ev:['EV','ELECTRIC'].includes(c[4]?.toUpperCase()),
       awd:['AWD','4WD'].includes(dt),
       tow:['COLORADO','SLV','SILV','SILVERADO','SUBURBAN','TAHOE','EXPRESS'].some(m=>model.includes(m)),
@@ -1543,19 +1544,21 @@ function parseNewCSV(text){
 function parseUsedCSV(text){
   const lines = text.trim().split('\n');
   if(lines.length < 2) return [];
-  // Headers: STOCK,YEAR,BRAND,MODEL,TRIM,Drive train,MILES,COLOR,CAR BRAVO CERT,MSRP,TYPE,NOTES
+  // Headers: STOCK(0),YEAR(1),BRAND(2),MODEL(3),TRIM(4),Drive train(5),MILES(6),COLOR(7),VIN(8),CAR BRAVO CERT(9),MSRP(10),TYPE(11),NOTES(12),Features(13)
   return lines.slice(1).map(line=>{
     const c = parseCSVLine(line);
     if(!c[0]) return null;
     const model = (c[3]||'').toUpperCase();
     const dt = (c[5]||'').toUpperCase();
-    const msrp = cleanNum(c[9]);
+    const msrp = cleanNum(c[10]);
     return {
       type:'used', stock:c[0], year:parseInt(c[1])||0,
       make:(c[2]||'').toUpperCase(), model, fuel:'GAS',
       trim:(c[4]||''), dt, miles:cleanNum(c[6]),
-      color:(c[7]||''), cert:(c[8]||'').toUpperCase()==='YES',
-      msrp, status:(c[10]||'RETAIL'),
+      color:(c[7]||''), vin:(c[8]||'').trim(),
+      cert:(c[9]||'').toUpperCase()==='YES',
+      msrp, status:(c[11]||'RETAIL'),
+      notes:(c[12]||''), features:(c[13]||''),
       ev:false,
       awd:['AWD','4WD'].includes(dt),
       tow:['RAM','SILVERADO','SLV','COLORADO','TACOMA','TUNDRA','F-250','F-150','SIERRA','YUKON','SUBURBAN','TAHOE'].some(m=>model.includes(m)||c[2]?.toUpperCase().includes(m)),
@@ -1861,7 +1864,7 @@ When answering:
 }
 
 // ── VIN LOOKUP ────────────────────────────────────────────────────────────────
-const INV_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyybTXq_TbpvcOsXB2e00OGyOqQlvX3_pnbNcqKamgeJETAnEaDT10YGTTjndKkDg31kw/exec';
+const INV_SCRIPT_URL = ''; // ← paste your inventory Apps Script URL here after deploying
 
 function confirmVinLookup(){
   if(!INV_SCRIPT_URL){
@@ -1872,8 +1875,12 @@ function confirmVinLookup(){
     showToast('Sync inventory from Google Sheet first','#c0392b');
     return;
   }
-  const count = invData.filter(v=>v.vin&&v.vin.length===17).length;
-  document.getElementById('vin-modal-count').textContent = count + ' vehicles with valid VINs found in your synced inventory.';
+  // Count will be accurate after sheet fetch — show approximate count from both new+used
+  const newCount = invData.filter(v=>v.type==='new'&&v.vin&&v.vin.length===17).length;
+  const usedCount = invData.filter(v=>v.type==='used'&&v.vin&&v.vin.length===17).length;
+  const totalEst = newCount + usedCount;
+  document.getElementById('vin-modal-count').textContent = 
+    `~${totalEst} vehicles found (${newCount} new + ${usedCount} used). Exact count confirmed from sheet when you proceed.`;
   document.getElementById('vin-modal').style.display='flex';
   document.getElementById('vin-modal-progress').style.display='none';
 }

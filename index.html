@@ -168,36 +168,20 @@ textarea{min-height:100px;resize:vertical;line-height:1.6;}
 
 
 /* ── INVENTORY PAGE ── */
-.inv-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
-.inv-toolbar-left{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-.inv-seg{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:7px;overflow:hidden;}
-.inv-seg button{background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;padding:7px 14px;cursor:pointer;}
-.inv-seg button.on{background:var(--gold);color:#0d1117;}
-.inv-status{font-size:11px;color:var(--muted);font-style:italic;}
-.btn-sync{background:var(--gold);color:#0d1117;border:none;border-radius:7px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;}
+.btn-sync{background:var(--gold);color:#0d1117;border:none;border-radius:7px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
 .btn-sync:hover{opacity:.9;}
 .btn-sync:disabled{opacity:.4;cursor:not-allowed;}
-.inv-section{margin-bottom:28px;}
-.inv-section-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
-.inv-section-title{font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;}
-.inv-count{font-size:11px;color:var(--muted);background:var(--surface2);border-radius:20px;padding:2px 9px;}
-.diff-legend{display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
-.diff-pill{font-size:10px;font-weight:700;border-radius:4px;padding:3px 8px;}
-.diff-add{background:rgba(46,166,75,.2);color:#4fd97a;}
-.diff-remove{background:rgba(192,57,43,.2);color:#e87070;}
-.diff-change{background:rgba(200,168,75,.2);color:var(--gold);}
-.diff-ok{background:var(--surface2);color:var(--muted);}
-table.inv-table{width:100%;border-collapse:collapse;font-size:12px;}
-table.inv-table th{text-align:left;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
-table.inv-table td{padding:8px 10px;border-bottom:1px solid rgba(42,49,71,.5);color:var(--text);vertical-align:top;}
-table.inv-table tr:hover td{background:var(--surface2);}
-table.inv-table tr.row-add td{background:rgba(46,166,75,.07);}
-table.inv-table tr.row-remove td{background:rgba(192,57,43,.07);text-decoration:line-through;color:var(--muted);}
-table.inv-table tr.row-change td{background:rgba(200,168,75,.06);}
-.diff-tag{font-size:9px;font-weight:700;border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:middle;}
 .inv-empty{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
-.inv-filter{background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;padding:6px 10px;}
-.inv-filter:focus{outline:none;border-color:var(--gold);}
+table.inv-table{width:100%;border-collapse:collapse;font-size:12px;}
+table.inv-table th{text-align:left;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
+table.inv-table th:hover{color:var(--gold);}
+table.inv-table td{padding:8px 10px;border-bottom:1px solid rgba(42,49,71,.4);color:var(--text);vertical-align:middle;}
+table.inv-table tr:hover td{background:var(--surface2);}
+.inv-badge{font-size:9px;font-weight:700;border-radius:4px;padding:2px 6px;text-transform:uppercase;}
+.inv-b-new{background:rgba(46,166,75,.2);color:#4fd97a;}
+.inv-b-used{background:rgba(58,90,138,.3);color:#7aaee8;}
+.inv-b-cert{background:rgba(200,168,75,.2);color:var(--gold);}
+.inv-pills .pill{font-size:12px;padding:5px 12px;}
 
 /* spinner */
 .spin-wrap{text-align:center;padding:40px 20px;}
@@ -355,41 +339,77 @@ table.inv-table tr.row-change td{background:rgba(200,168,75,.06);}
 
 <!-- ── PAGE: INVENTORY ── -->
 <div class="page" id="page-inventory">
-  <div class="inv-toolbar">
-    <div class="inv-toolbar-left">
-      <div class="inv-seg" id="inv-seg">
-        <button class="on" onclick="switchInvTab('new',this)">New Cars</button>
-        <button onclick="switchInvTab('used',this)">Used Cars</button>
-      </div>
-      <input class="inv-filter" type="text" placeholder="Filter by model, stock, color…" oninput="filterInvTable(this.value)" id="inv-filter-box">
-      <div class="inv-status" id="inv-sync-status">Not yet synced from sheet</div>
-    </div>
-    <button class="btn-sync" id="btn-sync" onclick="syncFromSheet()">⬇ Update from Google Sheet</button>
+
+  <!-- SYNC BAR -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
+    <div id="inv-sync-status" style="font-size:12px;color:var(--muted);">Not yet synced — hit the button to load inventory from your sheet.</div>
+    <button class="btn-sync" id="btn-sync" onclick="syncFromSheet()">⬇ Sync from Google Sheet</button>
   </div>
 
-  <!-- DIFF SUMMARY -->
-  <div id="inv-diff-summary" style="display:none;margin-bottom:16px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
-    <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">Last Sync Results</div>
-    <div id="inv-diff-detail" style="font-size:12px;color:var(--muted);line-height:1.8;"></div>
+  <!-- FILTERS -->
+  <div class="fcard" style="margin-bottom:16px;">
+
+    <!-- text search -->
+    <input type="text" id="inv-text-search" placeholder="Search stock #, color, trim…"
+      oninput="renderInvTable()"
+      style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;padding:9px 12px;margin-bottom:16px;">
+
+    <!-- Type -->
+    <div class="plabel" style="margin-bottom:6px;">Type</div>
+    <div class="pills inv-pills" id="fp-type" style="margin-bottom:14px;">
+      <div class="pill on" data-val="new" onclick="invPillToggle(this,'fp-type',true)">New</div>
+      <div class="pill on" data-val="used" onclick="invPillToggle(this,'fp-type',true)">Used</div>
+    </div>
+
+    <!-- Model -->
+    <div class="plabel" style="margin-bottom:6px;">Model</div>
+    <div class="pills inv-pills" id="fp-model" style="margin-bottom:14px;">
+      <div class="pill on" data-val="all" onclick="invPillToggle(this,'fp-model',false)">All</div>
+      <div class="pill" data-val="trax" onclick="invPillToggle(this,'fp-model',false)">Trax</div>
+      <div class="pill" data-val="trailblazer" onclick="invPillToggle(this,'fp-model',false)">Trailblazer</div>
+      <div class="pill" data-val="equinox" onclick="invPillToggle(this,'fp-model',false)">Equinox</div>
+      <div class="pill" data-val="blazer" onclick="invPillToggle(this,'fp-model',false)">Blazer</div>
+      <div class="pill" data-val="traverse" onclick="invPillToggle(this,'fp-model',false)">Traverse</div>
+      <div class="pill" data-val="colorado" onclick="invPillToggle(this,'fp-model',false)">Colorado</div>
+      <div class="pill" data-val="silverado|slv" onclick="invPillToggle(this,'fp-model',false)">Silverado</div>
+      <div class="pill" data-val="suburban" onclick="invPillToggle(this,'fp-model',false)">Suburban</div>
+      <div class="pill" data-val="tahoe" onclick="invPillToggle(this,'fp-model',false)">Tahoe</div>
+      <div class="pill" data-val="bolt" onclick="invPillToggle(this,'fp-model',false)">Bolt EV</div>
+      <div class="pill" data-val="other" onclick="invPillToggle(this,'fp-model',false)">Other</div>
+    </div>
+
+    <!-- Drive -->
+    <div class="plabel" style="margin-bottom:6px;">Drive</div>
+    <div class="pills inv-pills" id="fp-drive" style="margin-bottom:14px;">
+      <div class="pill on" data-val="all" onclick="invPillToggle(this,'fp-drive',false)">All</div>
+      <div class="pill" data-val="fwd" onclick="invPillToggle(this,'fp-drive',false)">FWD</div>
+      <div class="pill" data-val="awd" onclick="invPillToggle(this,'fp-drive',false)">AWD</div>
+      <div class="pill" data-val="4wd" onclick="invPillToggle(this,'fp-drive',false)">4WD</div>
+      <div class="pill" data-val="rwd" onclick="invPillToggle(this,'fp-drive',false)">RWD</div>
+    </div>
+
+    <!-- Price -->
+    <div class="plabel" style="margin-bottom:6px;">Price Range</div>
+    <div class="pills inv-pills" id="fp-price" style="margin-bottom:0;">
+      <div class="pill on" data-val="all" onclick="invPillToggle(this,'fp-price',false)">Any</div>
+      <div class="pill" data-val="0-20000" onclick="invPillToggle(this,'fp-price',false)">Under $20K</div>
+      <div class="pill" data-val="20000-30000" onclick="invPillToggle(this,'fp-price',false)">$20–30K</div>
+      <div class="pill" data-val="30000-40000" onclick="invPillToggle(this,'fp-price',false)">$30–40K</div>
+      <div class="pill" data-val="40000-55000" onclick="invPillToggle(this,'fp-price',false)">$40–55K</div>
+      <div class="pill" data-val="55000-999999" onclick="invPillToggle(this,'fp-price',false)">$55K+</div>
+    </div>
   </div>
 
-  <!-- SHEET DATA -->
-  <div class="inv-section">
-    <div class="inv-section-hdr">
-      <div class="inv-section-title">📄 Google Sheet (Live)</div>
-      <div class="inv-count" id="sheet-count">—</div>
-    </div>
-    <div id="sheet-table-wrap"><div class="inv-empty">Click "Update from Google Sheet" to load live data.</div></div>
+  <!-- RESULTS COUNT -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <div id="inv-result-count" style="font-size:12px;color:var(--muted);"></div>
   </div>
 
-  <!-- APP DATA -->
-  <div class="inv-section">
-    <div class="inv-section-hdr">
-      <div class="inv-section-title">🖥 Currently in App</div>
-      <div class="inv-count" id="app-count">—</div>
-    </div>
-    <div id="app-table-wrap"></div>
+  <!-- TABLE -->
+  <div id="inv-table-wrap">
+    <div class="inv-empty">Sync from Google Sheet to load inventory.</div>
   </div>
+
 </div>
 
 <!-- ── PAGE: CUSTOMER DETAIL ── -->
@@ -457,9 +477,10 @@ function showPage(p){
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  const tabs=['new','past','settings'];
+  const tabs=['new','past','settings','inventory'];
   document.querySelectorAll('.nav-tab')[tabs.indexOf(p)]?.classList.add('active');
   if(p==='past') loadCustomers();
+  if(p==='inventory') showPage_inv();
 }
 
 // ── STEPPERS ─────────────────────────────────────────────────────────────────
@@ -1350,6 +1371,252 @@ function refreshFavsSection(c,idx){
     </div>`;
   }).join('');
 }
+
+// ── INVENTORY ─────────────────────────────────────────────────────────────────
+let invData = []; // synced inventory array
+
+const SHEET_CSV_NEW = 'https://docs.google.com/spreadsheets/d/1fyaBg6or2oq2RH4ioth5RUUvmhBuP8Rn9Wlubh-7PuM/gviz/tq?tqx=out:csv&sheet=NEW%20INVENTORY';
+const SHEET_CSV_USED = 'https://docs.google.com/spreadsheets/d/1fyaBg6or2oq2RH4ioth5RUUvmhBuP8Rn9Wlubh-7PuM/gviz/tq?tqx=out:csv&sheet=USED%20INVENTORY';
+
+function showPage_inv(){
+  // Load from localStorage cache if available
+  const cached = localStorage.getItem('inv_data');
+  const ts = localStorage.getItem('inv_ts');
+  if(cached){
+    invData = JSON.parse(cached);
+    renderInvTable();
+    if(ts) document.getElementById('inv-sync-status').textContent = 'Last synced: ' + ts;
+  }
+}
+
+async function syncFromSheet(){
+  const btn = document.getElementById('btn-sync');
+  const status = document.getElementById('inv-sync-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ Syncing…';
+  status.textContent = 'Fetching from Google Sheet…';
+  try {
+    // Fetch both sheets in parallel
+    const [newRes, usedRes] = await Promise.all([
+      fetch(SHEET_CSV_NEW), fetch(SHEET_CSV_USED)
+    ]);
+    const newText = await newRes.text();
+    const usedText = await usedRes.text();
+
+    const newVehicles = parseNewCSV(newText);
+    const usedVehicles = parseUsedCSV(usedText);
+    invData = [...newVehicles, ...usedVehicles];
+
+    // Save to localStorage with timestamp
+    const ts = new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+    localStorage.setItem('inv_data', JSON.stringify(invData));
+    localStorage.setItem('inv_ts', ts);
+
+    // Also update the ALL object used by the match tool
+    rebuildALL(invData);
+
+    status.textContent = 'Last synced: ' + ts + ' · ' + newVehicles.length + ' new, ' + usedVehicles.length + ' used';
+    renderInvTable();
+    showToast('✓ Inventory updated — ' + invData.length + ' vehicles loaded');
+  } catch(e) {
+    status.textContent = 'Sync failed: ' + e.message;
+    showToast('Sync failed: ' + e.message, '#c0392b');
+  }
+  btn.disabled = false;
+  btn.textContent = '⬇ Sync from Google Sheet';
+}
+
+function parseCSVLine(line){
+  const result = [];
+  let cur = '', inQ = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+    else if(ch===','&&!inQ){result.push(cur.trim());cur='';}
+    else cur+=ch;
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function cleanNum(s){
+  if(!s)return 0;
+  return parseFloat(String(s).replace(/[$,]/g,''))||0;
+}
+
+function parseNewCSV(text){
+  const lines = text.trim().split('\n');
+  if(lines.length < 2) return [];
+  // Headers: STOCK,YEAR,MAKE,MODEL,FUEL,TRIM,Drive train,COLOR,VIN,REC,STATUS,PICS,PDI,DAYS,INVOICE,MSRP,...
+  return lines.slice(1).map(line=>{
+    const c = parseCSVLine(line);
+    if(!c[0]) return null;
+    const model = (c[3]||'').toUpperCase();
+    const dt = (c[6]||'').toUpperCase();
+    return {
+      type:'new', stock:c[0], year:parseInt(c[1])||2026,
+      make:(c[2]||'').toUpperCase(), model, fuel:(c[4]||'').toUpperCase(),
+      trim:(c[5]||''), dt, color:(c[7]||''),
+      vin:c[8]||'', status:(c[10]||'AVAILABLE'),
+      pics:(c[11]||''), pdi:(c[12]||''), days:parseInt(c[13])||0,
+      invoice:cleanNum(c[14]), msrp:cleanNum(c[15]),
+      ev:['EV','ELECTRIC'].includes(c[4]?.toUpperCase()),
+      awd:['AWD','4WD'].includes(dt),
+      tow:['COLORADO','SLV','SILV','SILVERADO','SUBURBAN','TAHOE','EXPRESS'].some(m=>model.includes(m)),
+      threeRow:['TRAVERSE','SUBURBAN','TAHOE','EXPRESS'].some(m=>model.includes(m)),
+      seats:['TRAVERSE','SUBURBAN','TAHOE'].some(m=>model.includes(m))?7:c[0]==='265538'?12:5,
+      cert:false, miles:0,
+      fullName:`${c[1]} ${c[2]} ${model} ${c[5]} ${dt}`
+    };
+  }).filter(Boolean);
+}
+
+function parseUsedCSV(text){
+  const lines = text.trim().split('\n');
+  if(lines.length < 2) return [];
+  // Headers: STOCK,YEAR,BRAND,MODEL,TRIM,Drive train,MILES,COLOR,CAR BRAVO CERT,MSRP,TYPE,NOTES
+  return lines.slice(1).map(line=>{
+    const c = parseCSVLine(line);
+    if(!c[0]) return null;
+    const model = (c[3]||'').toUpperCase();
+    const dt = (c[5]||'').toUpperCase();
+    const msrp = cleanNum(c[9]);
+    return {
+      type:'used', stock:c[0], year:parseInt(c[1])||0,
+      make:(c[2]||'').toUpperCase(), model, fuel:'GAS',
+      trim:(c[4]||''), dt, miles:cleanNum(c[6]),
+      color:(c[7]||''), cert:(c[8]||'').toUpperCase()==='YES',
+      msrp, status:(c[10]||'RETAIL'),
+      ev:false,
+      awd:['AWD','4WD'].includes(dt),
+      tow:['RAM','SILVERADO','SLV','COLORADO','TACOMA','TUNDRA','F-250','F-150','SIERRA','YUKON','SUBURBAN','TAHOE'].some(m=>model.includes(m)||c[2]?.toUpperCase().includes(m)),
+      threeRow:['TRAVERSE','SUBURBAN','TAHOE','HIGHLANDER','DURANGO','PACIFICA','ODYSSEY','ACADIA','YUKON'].some(m=>model.includes(m)),
+      seats:['TRAVERSE','SUBURBAN','TAHOE','HIGHLANDER','DURANGO','PACIFICA','ODYSSEY','ACADIA','YUKON'].some(m=>model.includes(m))?7:5,
+      fullName:`${c[1]} ${c[2]} ${model} ${c[4]}`
+    };
+  }).filter(Boolean);
+}
+
+function rebuildALL(inv){
+  // Clear and rebuild the ALL object used by the match tool
+  Object.keys(ALL).forEach(k=>delete ALL[k]);
+  inv.forEach(v=>{ ALL[v.stock] = v; });
+}
+
+function invPillToggle(el, groupId, multiSelect){
+  const group = document.getElementById(groupId);
+  if(multiSelect){
+    el.classList.toggle('on');
+  } else {
+    // Single select with "All" logic
+    const val = el.dataset.val;
+    if(val === 'all'){
+      group.querySelectorAll('.pill').forEach(p=>p.classList.remove('on'));
+      el.classList.add('on');
+    } else {
+      group.querySelector('[data-val="all"]')?.classList.remove('on');
+      el.classList.toggle('on');
+      // If nothing selected, revert to All
+      const anyOn = [...group.querySelectorAll('.pill')].some(p=>p.classList.contains('on'));
+      if(!anyOn) group.querySelector('[data-val="all"]')?.classList.add('on');
+    }
+  }
+  renderInvTable();
+}
+
+function getActivePills(groupId){
+  return [...document.querySelectorAll(`#${groupId} .pill.on`)].map(p=>p.dataset.val);
+}
+
+function renderInvTable(){
+  const wrap = document.getElementById('inv-table-wrap');
+  if(!invData.length){
+    wrap.innerHTML='<div class="inv-empty">Sync from Google Sheet to load inventory.</div>';
+    document.getElementById('inv-result-count').textContent='';
+    return;
+  }
+
+  const text = (document.getElementById('inv-text-search')?.value||'').toLowerCase();
+  const types = getActivePills('fp-type');   // new, used (multi)
+  const models = getActivePills('fp-model'); // all or specific
+  const drives = getActivePills('fp-drive'); // all or specific
+  const prices = getActivePills('fp-price'); // all or range
+
+  const knownModels = ['trax','trailblazer','equinox','blazer','traverse','colorado','silverado','slv','suburban','tahoe','bolt'];
+
+  const filtered = invData.filter(v=>{
+    // Type filter (multi-select)
+    if(!types.includes(v.type)) return false;
+
+    // Model filter
+    if(!models.includes('all')){
+      const mLow = v.model.toLowerCase();
+      const matched = models.some(m=>{
+        if(m==='other') return !knownModels.some(km=>mLow.includes(km));
+        return m.split('|').some(part=>mLow.includes(part));
+      });
+      if(!matched) return false;
+    }
+
+    // Drive filter
+    if(!drives.includes('all')){
+      if(!drives.some(d=>v.dt.toLowerCase()===d)) return false;
+    }
+
+    // Price filter
+    if(!prices.includes('all')){
+      const inRange = prices.some(p=>{
+        const [lo,hi] = p.split('-').map(Number);
+        return v.msrp>=lo && v.msrp<=hi;
+      });
+      if(!inRange) return false;
+    }
+
+    // Text search
+    if(text){
+      const haystack = [v.stock,v.model,v.make,v.trim,v.color,v.dt,v.year,v.vin||''].join(' ').toLowerCase();
+      if(!haystack.includes(text)) return false;
+    }
+
+    return true;
+  });
+
+  document.getElementById('inv-result-count').textContent =
+    filtered.length + ' vehicle' + (filtered.length===1?'':'s') + ' shown';
+
+  if(!filtered.length){
+    wrap.innerHTML='<div class="inv-empty">No vehicles match those filters.</div>';
+    return;
+  }
+
+  const rows = filtered.map(v=>{
+    const typeBadge = v.type==='new'
+      ? `<span class="inv-badge inv-b-new">NEW</span>`
+      : `<span class="inv-badge inv-b-used">USED</span>${v.cert?'<span class="inv-badge inv-b-cert" style="margin-left:4px;">Car Bravo</span>':''}`;
+    const msrp = v.msrp ? '$'+v.msrp.toLocaleString() : '—';
+    const miles = v.type==='used'&&v.miles ? v.miles.toLocaleString()+' mi' : '—';
+    return `<tr>
+      <td>${typeBadge}</td>
+      <td style="font-weight:600;color:var(--gold)">${esc(v.stock)}</td>
+      <td>${v.year}</td>
+      <td style="font-weight:600">${esc(v.make)} ${esc(v.model)}</td>
+      <td style="color:var(--muted)">${esc(v.trim)}</td>
+      <td style="color:var(--muted)">${esc(v.dt)}</td>
+      <td style="color:var(--muted)">${esc(v.color)}</td>
+      <td>${miles}</td>
+      <td style="font-weight:600;color:var(--gold)">${msrp}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<div style="overflow-x:auto;"><table class="inv-table">
+    <thead><tr>
+      <th>Type</th><th>Stock #</th><th>Year</th><th>Model</th>
+      <th>Trim</th><th>Drive</th><th>Color</th><th>Miles</th><th>MSRP</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
 </script>
 </body>
 </html>

@@ -366,7 +366,35 @@ table.inv-table tr:hover td{background:var(--surface2);}
   <!-- SYNC BAR -->
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
     <div id="inv-sync-status" style="font-size:12px;color:var(--muted);">Not yet synced — hit the button to load inventory from your sheet.</div>
-    <button class="btn-sync" id="btn-sync" onclick="syncFromSheet()">⬇ Sync from Google Sheet</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button class="btn-sync" id="btn-sync" onclick="syncFromSheet()">⬇ Sync from Google Sheet</button>
+      <button class="btn-sync" id="btn-vin" onclick="confirmVinLookup()" style="background:var(--surface2);color:var(--muted);border:1px solid var(--border);">🔍 Fetch VIN Data</button>
+    </div>
+  </div>
+
+  <!-- VIN CONFIRM MODAL -->
+  <div id="vin-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:400;align-items:center;justify-content:center;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:440px;max-width:92vw;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:8px;">⚠️ Fetch VIN Data from NHTSA?</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:20px;">
+        This will look up every vehicle in your inventory using the NHTSA database and write engine, transmission, and spec data to your Google Sheet.<br><br>
+        <strong style="color:var(--text);">Only run this when:</strong><br>
+        • You have new inventory that hasn't been looked up yet<br>
+        • You want to refresh specs after adding vehicles<br><br>
+        <span style="color:var(--gold);">This will NOT overwrite existing Notes or Features you've manually entered.</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:18px;" id="vin-modal-count"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="closeVinModal()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:9px 18px;font-size:13px;cursor:pointer;">Cancel</button>
+        <button onclick="runVinLookup()" style="background:var(--gold);color:#0d1117;border:none;border-radius:6px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;">Yes, fetch VIN data</button>
+      </div>
+      <div id="vin-modal-progress" style="margin-top:16px;display:none;">
+        <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+          <div id="vin-progress-bar" style="height:100%;background:var(--gold);width:0%;transition:width .3s;"></div>
+        </div>
+        <div id="vin-progress-text" style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center;"></div>
+      </div>
+    </div>
   </div>
 
   <!-- ASK GEOFF -->
@@ -1830,6 +1858,152 @@ When answering:
   }
   btn.disabled = false;
   document.getElementById('ag-messages').scrollTop = 9999;
+}
+
+// ── VIN LOOKUP ────────────────────────────────────────────────────────────────
+const INV_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyybTXq_TbpvcOsXB2e00OGyOqQlvX3_pnbNcqKamgeJETAnEaDT10YGTTjndKkDg31kw/exec';
+
+function confirmVinLookup(){
+  if(!INV_SCRIPT_URL){
+    showToast('Set INV_SCRIPT_URL in the app first — see instructions','#c0392b');
+    return;
+  }
+  if(!invData.length){
+    showToast('Sync inventory from Google Sheet first','#c0392b');
+    return;
+  }
+  const count = invData.filter(v=>v.vin&&v.vin.length===17).length;
+  document.getElementById('vin-modal-count').textContent = count + ' vehicles with valid VINs found in your synced inventory.';
+  document.getElementById('vin-modal').style.display='flex';
+  document.getElementById('vin-modal-progress').style.display='none';
+}
+
+function closeVinModal(){
+  document.getElementById('vin-modal').style.display='none';
+}
+
+async function runVinLookup(){
+  const progress = document.getElementById('vin-modal-progress');
+  const bar = document.getElementById('vin-progress-bar');
+  const txt = document.getElementById('vin-progress-text');
+  progress.style.display='block';
+
+  // Step 1 — get VIN list with row numbers from sheet
+  txt.textContent = 'Getting vehicle list from sheet…';
+  bar.style.width='5%';
+
+  let sheetVehicles;
+  try{
+    const res = await fetch(INV_SCRIPT_URL+'?action=getVINs');
+    sheetVehicles = await res.json();
+    if(!Array.isArray(sheetVehicles)) throw new Error(sheetVehicles.error||'Failed to get VINs');
+  }catch(e){
+    showToast('Could not get VINs from sheet: '+e.message,'#c0392b');
+    progress.style.display='none';
+    return;
+  }
+
+  const validVehicles = sheetVehicles.filter(v=>v.vin&&v.vin.length===17);
+  txt.textContent = `Looking up ${validVehicles.length} VINs from NHTSA…`;
+  bar.style.width='10%';
+
+  // Step 2 — batch decode VINs via NHTSA (50 at a time)
+  const BATCH_SIZE = 50;
+  const results = [];
+  const batches = [];
+  for(let i=0;i<validVehicles.length;i+=BATCH_SIZE){
+    batches.push(validVehicles.slice(i,i+BATCH_SIZE));
+  }
+
+  for(let b=0;b<batches.length;b++){
+    const batch = batches[b];
+    const vinList = batch.map(v=>v.vin).join(',');
+    try{
+      const url = `https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVINValuesBatch/`;
+      const res = await fetch(url,{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:`DATA=${encodeURIComponent(vinList)}&format=json`
+      });
+      const data = await res.json();
+      const decoded = data.Results||[];
+
+      for(let i=0;i<decoded.length;i++){
+        const d = decoded[i];
+        const sv = batch[i];
+        if(!sv)continue;
+
+        // Build clean features string
+        const parts = [];
+        if(d.DisplacementL&&d.EngineCylinders){
+          parts.push(`${parseFloat(d.DisplacementL).toFixed(1)}L ${d.EngineCylinders}-cyl`);
+        } else if(d.DisplacementL){
+          parts.push(`${parseFloat(d.DisplacementL).toFixed(1)}L engine`);
+        }
+        if(d.EngineHP) parts.push(`${Math.round(d.EngineHP)} HP`);
+        if(d.FuelTypePrimary&&d.FuelTypePrimary!=='Gasoline') parts.push(d.FuelTypePrimary);
+        if(d.TransmissionSpeeds&&d.TransmissionStyle){
+          parts.push(`${d.TransmissionSpeeds}-speed ${d.TransmissionStyle.toLowerCase()}`);
+        }
+        if(d.DriveType) parts.push(d.DriveType);
+        if(d.GVWR) parts.push(`GVWR: ${d.GVWR}`);
+        if(d.BodyClass) parts.push(d.BodyClass);
+
+        const features = parts.join(' · ');
+
+        // Build notes (model year + make + model + series confirmation)
+        const noteParts = [];
+        if(d.Series) noteParts.push(`Series: ${d.Series}`);
+        if(d.Trim) noteParts.push(`Trim: ${d.Trim}`);
+        if(d.Note) noteParts.push(d.Note);
+        const notes = noteParts.join(' | ');
+
+        results.push({
+          stock: sv.stock,
+          vin: sv.vin,
+          row: sv.row,
+          sheet: sv.sheet,
+          features,
+          notes
+        });
+      }
+    }catch(e){
+      console.error('Batch error:', e);
+    }
+
+    const pct = 10 + Math.round((b+1)/batches.length*60);
+    bar.style.width = pct+'%';
+    txt.textContent = `Decoded batch ${b+1} of ${batches.length}…`;
+  }
+
+  // Step 3 — write results back to Google Sheet
+  bar.style.width='75%';
+  txt.textContent = `Writing ${results.length} results to Google Sheet…`;
+
+  try{
+    const res = await fetch(INV_SCRIPT_URL,{
+      method:'POST',
+      body:JSON.stringify({action:'writeFeatures',vehicles:results})
+    });
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+
+    bar.style.width='100%';
+    bar.style.background='var(--green)';
+    txt.textContent = `✓ Done! ${data.written} vehicles updated in your Google Sheet.`;
+    showToast(`✓ VIN data written for ${data.written} vehicles`);
+
+    setTimeout(()=>{
+      closeVinModal();
+      bar.style.background='var(--gold)';
+      bar.style.width='0%';
+    }, 2500);
+
+  }catch(e){
+    showToast('Write failed: '+e.message,'#c0392b');
+    bar.style.width='0%';
+    txt.textContent='Write failed: '+e.message;
+  }
 }
 
 </script>

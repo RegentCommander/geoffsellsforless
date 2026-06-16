@@ -1542,7 +1542,7 @@ function renderInvTable(){
   const drives = getActivePills('fp-drive'); // all or specific
   const prices = getActivePills('fp-price'); // all or range
 
-  const knownModels = ['trax','trailblazer','equinox','blazer','traverse','colorado','silverado','slv','suburban','tahoe','bolt'];
+  const knownModels = ['trax','trailblazer','equinox','traverse','colorado','silverado','slv','suburban','tahoe','bolt','blazer']; // blazer last so trailblazer matches first
 
   const filtered = invData.filter(v=>{
     // Type filter (multi-select)
@@ -1550,10 +1550,16 @@ function renderInvTable(){
 
     // Model filter
     if(!models.includes('all')){
-      const mLow = v.model.toLowerCase();
+      const mLow = v.model.toLowerCase().trim();
       const matched = models.some(m=>{
-        if(m==='other') return !knownModels.some(km=>mLow.includes(km));
-        return m.split('|').some(part=>mLow.includes(part));
+        if(m==='other') return !knownModels.some(km=>{
+          // exact word match to avoid trailblazer matching blazer
+          return new RegExp('\\b'+km+'\\b').test(mLow);
+        });
+        return m.split('|').some(part=>{
+          // Use word boundary so "blazer" doesn't match "trailblazer"
+          return new RegExp('\\b'+part+'\\b').test(mLow);
+        });
       });
       if(!matched) return false;
     }

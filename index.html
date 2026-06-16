@@ -372,7 +372,7 @@ table.inv-table tr:hover td{background:var(--surface2);}
   <!-- ASK GEOFF -->
   <div class="ag-wrap" id="ag-wrap">
     <div class="ag-header">
-      <div class="ag-title">🤖 Ask Geoff</div>
+      <div class="ag-title"><span style="background:var(--gold);color:#0d1117;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:800;margin-right:7px;letter-spacing:.03em;">DC</span>Ask Geoff</div>
       <button class="ag-toggle" onclick="toggleAskGeoff()" id="ag-toggle-btn">Hide ▲</button>
     </div>
     <div id="ag-body">
@@ -1715,7 +1715,12 @@ function agAddMessage(role, text){
 
   const avatar = document.createElement('div');
   avatar.className = 'ag-avatar ' + (role==='user'?'user':'ai');
-  avatar.textContent = role==='user' ? 'G' : '🤖';
+  if(role==='user'){
+    avatar.textContent='G';
+  } else {
+    avatar.style.cssText='width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;margin-top:2px;background:var(--gold);color:#0d1117;letter-spacing:.02em;';
+    avatar.textContent='DC';
+  }
 
   const bubble = document.createElement('div');
   bubble.className = 'ag-bubble';
@@ -1774,8 +1779,11 @@ ${invSummary}
 
 When answering:
 - Be conversational and direct — Geoff is on the sales floor and needs fast answers
-- When listing vehicles, include stock number, year, model, color, and price
-- If asked about features not in the data (leather, sunroof, etc.), note that detailed trim data isn't loaded yet and suggest checking the sheet or VIN
+- NEVER use markdown tables, pipe characters, or dashes as separators. Never use | in your response.
+- When listing vehicles, use this exact format for each one (one per line, starting with a bullet •):
+  • [Year] [Make] [Model] [Trim] — [Color] — $[Price] — Stock #[Stock] — [Miles if used]
+- After listing options, add 1-2 sentences of insight or a follow-up question
+- If asked about features not in the data (leather, sunroof, etc.), note that detailed trim data isn't loaded yet
 - You can do math — calculate monthly payments, compare prices, count inventory
 - Keep responses concise unless Geoff asks for detail`;
 
@@ -1800,7 +1808,22 @@ When answering:
     if(data.error) throw new Error(data.error.message);
     const reply = data.content[0].text;
     agHistory.push({role:'assistant', content:reply});
-    typingBubble.innerHTML = reply.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+    const formatted = reply
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .split('\n')
+      .map(line=>{
+        line=line.trim();
+        if(line.startsWith('•')||line.startsWith('-')){
+          const txt=line.slice(1).trim();
+          // Bold the vehicle name part (before first —)
+          const styled=txt.replace(/^(.+?)(—)/,'<strong>$1</strong>$2');
+          return '<div style="display:flex;gap:8px;margin:6px 0;padding:7px 10px;background:rgba(200,168,75,.07);border-radius:6px;border-left:2px solid var(--gold)"><span style="color:var(--gold);flex-shrink:0;margin-top:1px;">▸</span><span>'+styled+'</span></div>';
+        }
+        if(!line) return '<div style="height:4px"></div>';
+        return '<div style="margin:4px 0;">'+line+'</div>';
+      }).join('');
+    typingBubble.innerHTML = formatted;
   }catch(e){
     typingBubble.innerHTML = '<span style="color:var(--red)">Error: '+esc(e.message)+'</span>';
     agHistory.pop(); // remove failed user message from history

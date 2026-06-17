@@ -1444,8 +1444,8 @@ function refreshFavsSection(c,idx){
 let invData = []; // synced inventory array
 let invSort = {col:null, dir:1}; // current sort column and direction
 
-const SHEET_CSV_NEW = 'https://docs.google.com/spreadsheets/d/1fyaBg6or2oq2RH4ioth5RUUvmhBuP8Rn9Wlubh-7PuM/gviz/tq?tqx=out:csv&sheet=NEW%20INVENTORY';
-const SHEET_CSV_USED = 'https://docs.google.com/spreadsheets/d/1fyaBg6or2oq2RH4ioth5RUUvmhBuP8Rn9Wlubh-7PuM/gviz/tq?tqx=out:csv&sheet=USED%20INVENTORY';
+const SHEET_CSV_NEW = 'https://docs.google.com/spreadsheets/d/1HNcZnn-X7GBYt4dzwYLH30G8VMMQqXhjMmlZLPDsui4/gviz/tq?tqx=out:csv&sheet=NEW%20INVENTORY';
+const SHEET_CSV_USED = 'https://docs.google.com/spreadsheets/d/1HNcZnn-X7GBYt4dzwYLH30G8VMMQqXhjMmlZLPDsui4/gviz/tq?tqx=out:csv&sheet=USED%20INVENTORY';
 
 function showPage_inv(){
   // Load from localStorage cache if available
@@ -1515,22 +1515,22 @@ function cleanNum(s){
 
 function parseNewCSV(text){
   const lines = text.trim().split('\n');
-  if(lines.length < 2) return [];
-  // Headers: STOCK,YEAR,MAKE,MODEL,FUEL,TRIM,Drive train,COLOR,VIN,REC,STATUS,PICS,PDI,DAYS,INVOICE,MSRP,...
-  return lines.slice(1).map(line=>{
+  // Columns: STOCK,YEAR,MAKE,MODEL,FUEL,TRIM,DRIVE,EXT.COLOR,INT.COLOR,ENGINE/RANGE,MPG,VIN,STATUS,MSRP,KEY FEATURES,FULL DEALER NOTES
+  return lines.map(line=>{
     const c = parseCSVLine(line);
-    if(!c[0]) return null;
+    const yr = parseInt(String(c[1]||'').replace(/,/g,''));
+    if(!c[0] || !(yr>=1990 && yr<=2035)) return null; // skip banner/header/blank rows
     const model = (c[3]||'').toUpperCase();
     const dt = (c[6]||'').toUpperCase();
     return {
-      type:'new', stock:c[0], year:parseInt(c[1])||2026,
+      type:'new', stock:c[0], year:yr,
       make:(c[2]||'').toUpperCase(), model, fuel:(c[4]||'').toUpperCase(),
-      trim:(c[5]||''), dt, color:(c[7]||''),
-      vin:c[8]||'', status:(c[10]||'AVAILABLE'),
-      pics:(c[11]||''), pdi:(c[12]||''), days:parseInt(c[13])||0,
-      invoice:cleanNum(c[14]), msrp:cleanNum(c[15]),
-      notes:(c[16]||''), features:(c[17]||''),
-      ev:['EV','ELECTRIC'].includes(c[4]?.toUpperCase()),
+      trim:(c[5]||''), dt, color:(c[7]||''), intColor:(c[8]||''),
+      engine:(c[9]||''), mpg:(c[10]||''), vin:(c[11]||'').trim(),
+      status:(c[12]||'AVAILABLE'),
+      pics:'', pdi:'', days:0, invoice:0, msrp:cleanNum(c[13]),
+      notes:(c[15]||''), features:(c[14]||''),
+      ev:['EV','ELECTRIC'].includes((c[4]||'').toUpperCase()),
       awd:['AWD','4WD'].includes(dt),
       tow:['COLORADO','SLV','SILV','SILVERADO','SUBURBAN','TAHOE','EXPRESS'].some(m=>model.includes(m)),
       threeRow:['TRAVERSE','SUBURBAN','TAHOE','EXPRESS'].some(m=>model.includes(m)),
@@ -1543,11 +1543,11 @@ function parseNewCSV(text){
 
 function parseUsedCSV(text){
   const lines = text.trim().split('\n');
-  if(lines.length < 2) return [];
-  // Headers: STOCK(0),YEAR(1),BRAND(2),MODEL(3),TRIM(4),Drive train(5),MILES(6),COLOR(7),VIN(8),CAR BRAVO CERT(9),MSRP(10),TYPE(11),NOTES(12),Features(13)
-  return lines.slice(1).map(line=>{
+  // Columns: STOCK,YEAR,BRAND,MODEL,TRIM,DRIVE,MILES,COLOR,VIN,CAR BRAVO CERT,MSRP,TYPE,NOTES,FEATURES
+  return lines.map(line=>{
     const c = parseCSVLine(line);
-    if(!c[0]) return null;
+    const yr = parseInt(String(c[1]||'').replace(/,/g,''));
+    if(!c[0] || !(yr>=1990 && yr<=2035)) return null; // skip banner/subtitle/header/blank rows
     const model = (c[3]||'').toUpperCase();
     const dt = (c[5]||'').toUpperCase();
     const msrp = cleanNum(c[10]);

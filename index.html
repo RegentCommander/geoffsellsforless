@@ -1672,7 +1672,7 @@ function renderInvTable(){
 
     // Text search
     if(text){
-      const haystack = [v.stock,v.model,v.make,v.trim,v.color,v.dt,v.year,v.vin||''].join(' ').toLowerCase();
+      const haystack = [v.stock,v.model,v.make,v.trim,v.color,v.dt,v.year,v.fuel||'',v.vin||''].join(' ').toLowerCase();
       if(!haystack.includes(text)) return false;
     }
 
@@ -1705,11 +1705,17 @@ function renderInvTable(){
       : `<span class="inv-badge inv-b-used">USED</span>${v.cert?'<span class="inv-badge inv-b-cert" style="margin-left:4px;">Car Bravo</span>':''}`;
     const msrp = v.msrp ? '$'+v.msrp.toLocaleString() : '—';
     const miles = v.type==='used'&&v.miles ? v.miles.toLocaleString()+' mi' : '—';
+    const f = (v.fuel||'').toUpperCase();
+    const fuelBadge = f==='EV'
+      ? '<span class="inv-badge" style="background:#10324f;color:#6fc0ff;margin-left:6px;">EV</span>'
+      : f==='DIESEL'
+      ? '<span class="inv-badge" style="background:#4a3712;color:#ffcf6b;margin-left:6px;">DIESEL</span>'
+      : '<span class="inv-badge" style="background:#2c2c2c;color:#9aa0a6;margin-left:6px;">GAS</span>';
     return `<tr>
       <td>${typeBadge}</td>
       <td style="font-weight:600;color:var(--gold)">${esc(v.stock)}</td>
       <td>${v.year}</td>
-      <td style="font-weight:600">${esc(v.make)} ${esc(v.model)}</td>
+      <td style="font-weight:600">${esc(v.make)} ${esc(v.model)} ${fuelBadge}</td>
       <td style="color:var(--muted)">${esc(v.trim)}</td>
       <td style="color:var(--muted)">${esc(v.dt)}</td>
       <td style="color:var(--muted)">${esc(v.color)}</td>

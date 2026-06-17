@@ -77,8 +77,13 @@ textarea{min-height:100px;resize:vertical;line-height:1.6;}
 .rcard.best{border-color:var(--gold);}
 .rcard:hover{border-color:var(--gold-dim);}
 .rcard-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
-.rank-badge{font-size:10px;font-weight:700;color:var(--muted);background:var(--surface2);border-radius:20px;padding:3px 9px;white-space:nowrap;}
-.best .rank-badge{background:var(--gold);color:#0d1117;}
+.rank-badge{font-size:10px;font-weight:700;color:var(--muted);background:var(--surface2);border:1px solid transparent;border-radius:20px;padding:3px 9px;white-space:nowrap;}
+.rank-badge.bk-blue{background:rgba(59,130,246,.16);border-color:rgba(59,130,246,.55);color:#93c5fd;}
+.rank-badge.bk-green{background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.55);color:#86efac;}
+.rank-badge.bk-yellow{background:rgba(234,179,8,.16);border-color:rgba(234,179,8,.55);color:#fde047;}
+.rank-badge.bk-orange{background:rgba(249,115,22,.16);border-color:rgba(249,115,22,.6);color:#fdba74;}
+.rank-badge.bk-red{background:rgba(239,68,68,.16);border-color:rgba(239,68,68,.6);color:#fca5a5;}
+.rank-badge.bk-purple{background:rgba(168,85,247,.18);border-color:rgba(168,85,247,.6);color:#d8b4fe;}
 .star-btn{background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:16px;line-height:1;padding:4px 8px;color:var(--muted);transition:all .15s;}
 .star-btn:hover{border-color:var(--gold);color:var(--gold);}
 .star-btn.on{border-color:var(--gold);color:var(--gold);background:rgba(200,168,75,.12);}
@@ -270,9 +275,6 @@ table.inv-table tr:hover td{background:var(--surface2);}
     <div class="stepper-grid">
       <div><div class="slabel">Target Monthly</div>
         <div class="stepper"><div class="sbtn" onclick="step('mo',-50)">−</div><div class="sval" id="vmo">$450</div><div class="sbtn" onclick="step('mo',50)">+</div></div>
-      </div>
-      <div><div class="slabel">± Range</div>
-        <div class="stepper"><div class="sbtn" onclick="step('rng',-25)">−</div><div class="sval" id="vrng">±$100</div><div class="sbtn" onclick="step('rng',25)">+</div></div>
       </div>
       <div><div class="slabel">Down Payment</div>
         <div class="stepper"><div class="sbtn" onclick="step('dn',-500)">−</div><div class="sval" id="vdn">$0</div><div class="sbtn" onclick="step('dn',500)">+</div></div>
@@ -539,6 +541,16 @@ function showToast(msg,color='var(--gold)'){
 
 const TAX  = ()=>parseFloat(document.getElementById('set-tax')?.value||'0.06');
 const TERM = ()=>parseInt(document.getElementById('set-term')?.value||'72');
+function budgetColor(est,target){
+  if(!target||!est||est<=0)return '';
+  const p=(est-target)/target;          // fraction over(+)/under(-) target
+  if(p<=0)return 'bk-blue';             // at or under target
+  if(p<=0.05)return 'bk-green';         // 0-5% over
+  if(p<=0.15)return 'bk-yellow';        // 5-15% over
+  if(p<=0.30)return 'bk-orange';        // 15-30% over
+  if(p<=0.55)return 'bk-red';           // 30-55% over
+  return 'bk-purple';                   // 55%+ over
+}
 
 // ── PAGES ────────────────────────────────────────────────────────────────────
 function showPage(p){
@@ -560,11 +572,9 @@ function step(w,d){
 }
 function updateBar(){
   document.getElementById('vmo').textContent='$'+mo.toLocaleString();
-  document.getElementById('vrng').textContent='±$'+rng.toLocaleString();
   document.getElementById('vdn').textContent='$'+dn.toLocaleString();
-  const lo=mo-rng, hi=mo+rng;
-  const maxV=Math.round((hi*TERM()+dn)/(1+TAX()));
-  document.getElementById('rb-range').textContent='$'+lo.toLocaleString()+' – $'+hi.toLocaleString()+'/mo';
+  const maxV=Math.round((mo*TERM()+dn)/(1+TAX()));
+  document.getElementById('rb-range').textContent='$'+mo.toLocaleString()+'/mo';
   document.getElementById('rb-max').textContent='$'+maxV.toLocaleString();
 }
 updateBar();
@@ -761,8 +771,8 @@ async function runMatch(){
   const finance=document.getElementById('cfinance').value;
   const house=document.getElementById('chouse').value;
   const notes=document.getElementById('cnotes').value.trim();
-  const lo=mo-rng,hi=mo+rng;
-  const maxV=Math.round((hi*TERM()+dn)/(1+TAX()));
+  const target=mo;
+  const maxV=Math.round((target*TERM()+dn)/(1+TAX()));
   const use=[],pri=[];
   document.querySelectorAll('#use-pills .pill.on').forEach(p=>use.push(p.dataset.val));
   document.querySelectorAll('#pri-pills .pill.on').forEach(p=>pri.push(p.dataset.val));
@@ -772,8 +782,6 @@ async function runMatch(){
     if(pri.includes('awd')&&!v.awd)return false;
     if(pri.includes('ev')&&!v.ev)return false;
     if(pri.includes('tow')&&!v.tow)return false;
-    const est=(v.msrp-dn)/TERM();
-    if(v.msrp>0&&est>hi*1.25)return false;
     return true;
   });
 
@@ -790,14 +798,14 @@ async function runMatch(){
 
 CUSTOMER: ${name}${email?' | '+email:''}
 FINANCING: ${finance||'not specified'} | HOUSEHOLD: ${house?house+' person(s)':'not specified'}
-BUDGET: $${lo}–$${hi}/mo | Down: $${dn} | Max vehicle: $${maxV.toLocaleString()} incl. 6% PA tax | Term: ${TERM()}mo
+TARGET: $${target}/mo | Down: $${dn} | ~Vehicle near target: $${maxV.toLocaleString()} incl. 6% PA tax | Term: ${TERM()}mo
 USE: ${use.join(', ')||'not specified'} | PRIORITIES: ${pri.join(', ')||'not specified'}
 NOTES: ${notes||'none'}
 
 INVENTORY (${pool.length} vehicles):
 ${invText}
 
-Rank 1–10. Include both new AND used. For used, mention mileage and value. Write 2–4 sentences per match tied to this specific customer. Be conversational.
+Rank 1–10. Include both new AND used. For used, mention mileage and value. Write 2–4 sentences per match tied to this specific customer. Be conversational. Do NOT state specific prices, MSRP, or monthly payment dollar amounts in the reasons; speak to fit, features, lifestyle and value (budget fit is shown visually).
 
 JSON only: {"summary":"one sentence","matches":[{"rank":1,"stock":"","title":"","subtitle":"Stock #XXXXX · Color","reason":"","tags":[""],"price_display":"$XX,XXX"}]}`}]})});
     const data=await res.json();
@@ -814,19 +822,19 @@ JSON only: {"summary":"one sentence","matches":[{"rank":1,"stock":"","title":"",
       html+=`<div class="rcard ${i===0?'best':''}">
         <div class="rcard-top">
           <button class="star-btn" id="star-${m.stock}" onclick="toggleStar('${m.stock}',this)" title="Star to save with customer">☆ Save</button>
-          <div class="rank-badge">${i===0?'BEST MATCH':'#'+(i+1)}</div>
+          <div class="rank-badge ${budgetColor(v?Math.round((v.msrp-dn)/TERM()):0,target)}">${i===0?'BEST MATCH':'#'+(i+1)}</div>
         </div>
         <div class="badge-row">${badges}</div>
         <div class="rcard-title">${esc(m.title)}</div>
         <div class="rcard-sub">${esc(m.subtitle)}</div>
         <div class="rcard-body">${esc(m.reason)}</div>
-        <div class="tag-row"><span class="tag p">${esc(m.price_display||'')}</span>${miTag}${certTag}${(m.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+        <div class="tag-row">${miTag}${certTag}${(m.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
       </div>`;
     });
     html+='</div>';
     document.getElementById('match-out').innerHTML=html;
     // Build pending save object
-    pendingSave={name,email,finance,house,budgetLo:lo,budgetHi:hi,down:dn,term:TERM(),use,priorities:pri,notes,favorites:[],picks:lastMatches.map(m=>({stock:m.stock,title:m.title,subtitle:m.subtitle,reason:m.reason,price_display:m.price_display,tags:m.tags})),analysis:r.summary||'',aiNotes:'',date:new Date().toLocaleString()};
+    pendingSave={name,email,finance,house,budgetLo:target,budgetHi:target,down:dn,term:TERM(),use,priorities:pri,notes,favorites:[],picks:lastMatches.map(m=>({stock:m.stock,title:m.title,subtitle:m.subtitle,reason:m.reason,price_display:m.price_display,tags:m.tags})),analysis:r.summary||'',aiNotes:'',date:new Date().toLocaleString()};
     document.getElementById('save-bar').style.display='flex';
     document.getElementById('match-out').scrollIntoView({behavior:'smooth'});
   }catch(e){
@@ -1367,6 +1375,8 @@ JSON only — no other text: {"matches":[{"rank":1,"stock":"","title":"","subtit
     sheetsPost({action:'update',customer:c});
 
     let html=`<div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;">10 New Matches · Updated Budget $${curBudLo.toLocaleString()}–$${curBudHi.toLocaleString()}/mo</div><div class="res-grid">`;
+    const rbTarget=(((curBudLo||0)+(curBudHi||0))/2)||curBudHi||curBudLo||0;
+    const rbTerm=curTerm>0?curTerm:72;
     newPicks.forEach((m,i)=>{
       const v=ALL[m.stock];const isU=v?.type==='used';
       const badges=isU?`<span class="badge b-used">USED</span>`:`<span class="badge b-new">NEW</span>`;
@@ -1375,13 +1385,13 @@ JSON only — no other text: {"matches":[{"rank":1,"stock":"","title":"","subtit
       html+=`<div class="rcard ${i===0?'best':''}">
         <div class="rcard-top">
           <button class="star-btn" onclick="addFavFromRematch(${idx},'${m.stock}',this,${JSON.stringify(m).replace(/</g,'\\u003c')})" title="Star to save with customer">☆ Save</button>
-          <div class="rank-badge">${i===0?'BEST':'#'+(i+1)}</div>
+          <div class="rank-badge ${budgetColor(v?Math.round((v.msrp-curDown)/rbTerm):0,rbTarget)}">${i===0?'BEST':'#'+(i+1)}</div>
         </div>
         <div class="badge-row">${badges}</div>
         <div class="rcard-title">${esc(m.title)}</div>
         <div class="rcard-sub">${esc(m.subtitle)}</div>
         <div class="rcard-body">${esc(m.reason)}</div>
-        <div class="tag-row"><span class="tag p">${esc(m.price_display||'')}</span>${miTag}${certTag}${(m.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+        <div class="tag-row">${miTag}${certTag}${(m.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
       </div>`;
     });
     html+='</div>';

@@ -229,6 +229,35 @@ table.inv-table tr:hover td{background:var(--surface2);}
 .ksave{background:var(--gold);color:#0d1117;}
 .kcancel{background:var(--surface2);color:var(--muted);}
 .ksaved{font-size:11px;color:var(--green);display:none;margin-bottom:8px;}
+/* ── PIPELINE / CRM ── */
+.pl-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.pl-title{font-size:13px;font-weight:700;color:var(--gold);letter-spacing:.07em;text-transform:uppercase;}
+.pl-sub{font-size:11px;color:var(--muted);}
+.pl-board{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;}
+.pl-lane{flex:0 0 188px;display:flex;flex-direction:column;gap:8px;}
+.pl-lane-h{display:flex;align-items:center;justify-content:space-between;padding:4px 6px;border-bottom:2px solid var(--border);}
+.pl-lane-t{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;}
+.pl-cnt{font-size:10px;font-weight:700;color:var(--muted);background:var(--surface2);border-radius:10px;padding:1px 8px;}
+.pl-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:11px 12px;cursor:pointer;transition:border-color .15s;}
+.pl-card:hover{border-color:var(--gold-dim);}
+.pl-cn{font-size:14px;font-weight:600;color:var(--text);}
+.pl-cv{font-size:11px;color:var(--muted);margin:3px 0 9px;}
+.pl-cf{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.pl-temp{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.04em;text-transform:uppercase;}
+.pl-temp.hot{background:rgba(216,90,48,.16);color:#e8825c;}
+.pl-temp.warm{background:rgba(200,168,75,.16);color:var(--gold);}
+.pl-temp.cold{background:rgba(55,138,221,.14);color:#6aa6e6;}
+.pl-due{font-size:10px;color:var(--muted);white-space:nowrap;}
+.pl-due.over{color:var(--red);font-weight:600;}
+.pl-due.today{color:var(--gold);font-weight:600;}
+.pl-acts{display:flex;gap:6px;margin-top:9px;}
+.pl-adv{flex:1;background:rgba(200,168,75,.1);border:1px solid rgba(200,168,75,.25);color:var(--gold);border-radius:6px;padding:5px;font-size:11px;font-weight:600;cursor:pointer;}
+.pl-adv:hover{background:rgba(200,168,75,.2);}
+.pl-lost{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer;}
+.pl-lost:hover{border-color:var(--red);color:var(--red);}
+.pl-reopen{flex:1;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px;font-size:11px;cursor:pointer;}
+.pl-reopen:hover{border-color:var(--gold);color:var(--gold);}
+.pl-empty{font-size:11px;color:var(--muted);text-align:center;padding:14px 4px;border:1px dashed var(--border);border-radius:8px;opacity:.55;}
 </style>
 </head>
 <body>
@@ -238,6 +267,7 @@ table.inv-table tr:hover td{background:var(--surface2);}
   <div class="nav-logo">DEL CHEVROLET <small>Customer Match</small></div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('new')">New Customer</button>
+    <button class="nav-tab" onclick="showPage('pipeline')">Pipeline</button>
     <button class="nav-tab" onclick="showPage('past')">Past Customers</button>
     <button class="nav-tab" onclick="showPage('settings')">Settings</button>
     <button class="nav-tab" onclick="showPage('inventory')">📋 Inventory</button>
@@ -334,6 +364,15 @@ table.inv-table tr:hover td{background:var(--surface2);}
   </div>
   <input class="search-box" type="text" placeholder="Search by name, email, or notes…" oninput="renderPast(this.value)">
   <div id="past-list"></div>
+</div>
+
+<!-- ── PAGE: PIPELINE ── -->
+<div class="page" id="page-pipeline">
+  <div class="pl-head">
+    <div class="pl-title">Pipeline</div>
+    <div class="pl-sub" id="pl-sub"></div>
+  </div>
+  <div class="pl-board" id="pl-board"></div>
 </div>
 
 <!-- ── PAGE: SETTINGS ── -->
@@ -519,7 +558,7 @@ let editIdx = null;     // which customer is open in modal
 let modalDown = 500;    // deal calc down payment in modal
 let customerCache = []; // in-memory customer list (loaded from Sheets)
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzlFx27IHCyfrayaCT03Ty5fjrEK1iy4BPH_corYBUONcPd4XgZh_J0ZiitAQ2gRadG/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiY3AfWPSPE860in2mmdxLowK4FVZR9kttnDlFmRAPsZlB1FMAAaDD4WpiVyMmhZHp/exec';
 
 // ── SHEETS API ────────────────────────────────────────────────────────────────
 async function sheetsGet(params){
@@ -557,10 +596,11 @@ function showPage(p){
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  const tabs=['new','past','settings','inventory'];
+  const tabs=['new','pipeline','past','settings','inventory'];
   document.querySelectorAll('.nav-tab')[tabs.indexOf(p)]?.classList.add('active');
   if(p==='past') loadCustomers();
   if(p==='inventory') showPage_inv();
+  if(p==='pipeline') renderPipeline();
 }
 
 // ── STEPPERS ─────────────────────────────────────────────────────────────────
@@ -887,6 +927,103 @@ function newCustomer(){
   document.getElementById('save-bar').style.display='none';
   lastMatches=[];pendingSave=null;
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── PIPELINE / CRM ────────────────────────────────────────────────────────────
+const STAGES=['New lead','Contacted','Appointment set','Test drive','Working numbers','Sold','Lost'];
+
+async function renderPipeline(){
+  const board=document.getElementById('pl-board');
+  if(!customerCache.length){
+    board.innerHTML='<div class="spin-wrap"><div class="spinner"></div><p style="color:var(--muted)">Loading pipeline…</p></div>';
+    try{
+      const data=await sheetsGet({action:'getAll'});
+      if(data.error)throw new Error(data.error);
+      customerCache=Array.isArray(data)?data.reverse():[];
+    }catch(e){
+      board.innerHTML='<div class="pl-empty" style="opacity:1;color:var(--red)">Could not load pipeline: '+esc(e.message)+'<br><br><button class="btn-outline" onclick="renderPipeline()">Retry</button></div>';
+      return;
+    }
+  }
+  drawPipeline();
+}
+
+function plStage(c){const s=c.stage||'New lead';return STAGES.includes(s)?s:'New lead';}
+
+function plTopVehicle(c){
+  const picks=c.picks||[];const favs=new Set(c.favorites||[]);
+  const fav=picks.find(p=>favs.has(p.stock));
+  return (fav&&fav.title)||(picks[0]&&picks[0].title)||'No vehicle yet';
+}
+
+function plDue(c){
+  const f=c.nextFollowUp;
+  if(!f)return{cls:'',txt:'No follow-up set'};
+  const d=new Date(f);if(isNaN(d))return{cls:'',txt:'No follow-up set'};
+  const today=new Date();today.setHours(0,0,0,0);
+  const day=new Date(d);day.setHours(0,0,0,0);
+  const diff=Math.round((day-today)/86400000);
+  if(diff<0)return{cls:'over',txt:'⚠ owe call '+Math.abs(diff)+'d'};
+  if(diff===0)return{cls:'today',txt:'due today'};
+  return{cls:'',txt:'in '+diff+'d'};
+}
+
+function drawPipeline(){
+  const board=document.getElementById('pl-board');
+  const sub=document.getElementById('pl-sub');
+  const active=customerCache.filter(c=>{const s=plStage(c);return s!=='Sold'&&s!=='Lost';});
+  const overdue=active.filter(c=>plDue(c).cls==='over').length;
+  sub.textContent=active.length+' active'+(overdue?' · '+overdue+' overdue follow-up'+(overdue>1?'s':''):'');
+  board.innerHTML=STAGES.map(stage=>{
+    const cards=customerCache.map((c,i)=>({c,i})).filter(o=>plStage(o.c)===stage);
+    const cardsHtml=cards.length?cards.map(({c,i})=>plCard(c,i,stage)).join(''):'<div class="pl-empty">—</div>';
+    return `<div class="pl-lane"><div class="pl-lane-h"><span class="pl-lane-t">${esc(stage)}</span><span class="pl-cnt">${cards.length}</span></div>${cardsHtml}</div>`;
+  }).join('');
+}
+
+function plCard(c,i,stage){
+  const temp=(c.leadScore||'').toLowerCase();
+  const tempHtml=['hot','warm','cold'].includes(temp)?`<span class="pl-temp ${temp}">${esc(temp)}</span>`:'<span></span>';
+  const due=plDue(c);
+  const dueHtml=`<span class="pl-due ${due.cls}">${esc(due.txt)}</span>`;
+  let acts;
+  if(stage==='Sold'||stage==='Lost'){
+    acts=`<div class="pl-acts"><button class="pl-reopen" onclick="event.stopPropagation();reopenDeal(${i})">↩ Reopen</button></div>`;
+  }else{
+    const next=STAGES[STAGES.indexOf(stage)+1];
+    const label=next==='Sold'?'Mark sold ✓':'Advance →';
+    acts=`<div class="pl-acts"><button class="pl-adv" onclick="event.stopPropagation();advanceStage(${i})">${label}</button><button class="pl-lost" onclick="event.stopPropagation();markLost(${i})" title="Mark lost">✕</button></div>`;
+  }
+  return `<div class="pl-card" onclick="openModal(${i})">
+    <div class="pl-cn">${esc(c.name||'Unknown')}</div>
+    <div class="pl-cv">${esc(plTopVehicle(c))}</div>
+    <div class="pl-cf">${tempHtml}${dueHtml}</div>
+    ${acts}</div>`;
+}
+
+async function setCustomerStage(i,newStage){
+  const c=customerCache[i];if(!c)return;
+  const prev=c.stage;c.stage=newStage;c.lastContact=new Date().toISOString();
+  drawPipeline();
+  try{
+    const r=await sheetsPost({action:'update',customer:c});
+    if(r.error)throw new Error(r.error);
+    showToast('✓ Moved to '+newStage);
+  }catch(e){
+    c.stage=prev;drawPipeline();
+    showToast('Save failed: '+e.message,'#c0392b');
+  }
+}
+function advanceStage(i){
+  const c=customerCache[i];if(!c)return;
+  const next=STAGES[STAGES.indexOf(plStage(c))+1];
+  if(!next||next==='Lost')return;
+  setCustomerStage(i,next);
+}
+function markLost(i){setCustomerStage(i,'Lost');}
+function reopenDeal(i){
+  const c=customerCache[i];if(!c)return;
+  setCustomerStage(i,plStage(c)==='Sold'?'Working numbers':'New lead');
 }
 
 // ── PAST CUSTOMERS ────────────────────────────────────────────────────────────

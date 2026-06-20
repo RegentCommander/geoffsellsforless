@@ -321,43 +321,7 @@ table.inv-table tr:hover td{background:var(--surface2);}
       <div class="field"><label>Nice-to-have</label><input type="text" id="dnice" placeholder="Bonuses"></div>
     </div>
     <div class="field" style="margin-top:12px"><label>Color preference</label><input type="text" id="dcolor" placeholder="Any color wishes"></div>
-  </div>
-
-  <div class="fcard">
-    <div class="fcard-title">Payment &amp; Credit</div>
-    <div class="stepper-grid">
-      <div><div class="slabel">Target Monthly</div>
-        <div class="stepper"><div class="sbtn" onclick="step('mo',-50)">−</div><div class="sval" id="vmo">$450</div><div class="sbtn" onclick="step('mo',50)">+</div></div>
-      </div>
-      <div><div class="slabel">Down Payment</div>
-        <div class="stepper"><div class="sbtn" onclick="step('dn',-500)">−</div><div class="sval" id="vdn">$0</div><div class="sbtn" onclick="step('dn',500)">+</div></div>
-      </div>
-    </div>
-    <div class="range-bar">
-      Range: <strong id="rb-range">$350 – $550/mo</strong> &nbsp;·&nbsp;
-      Est. max vehicle: <strong id="rb-max">$29,593</strong>
-      <span style="font-size:11px">incl. 6% PA tax</span>
-    </div>
-    <div class="field" style="margin-top:16px"><label>How's their credit? (1–10)</label>
-      <div class="credit-row">
-        <input type="range" id="ccredit" min="1" max="10" step="1" value="5" class="credit-range" oninput="updateCredit()">
-        <span class="credit-readout" id="credit-readout">5 · Average</span>
-      </div>
-      <div class="credit-scale"><span>1 · Bad</span><span>Average</span><span>Good · 10</span></div>
-      <div class="pills" style="margin-top:10px"><div class="pill" id="credit-unsure" data-val="unsure" onclick="this.classList.toggle('on');updateCredit()">Not sure</div></div>
-    </div>
-    <div class="field" style="margin-top:14px"><label>Most they can put down today — by</label>
-      <div class="pills" id="q-pay">
-        <div class="pill" data-val="CC" onclick="pickOne(this)">Credit card</div>
-        <div class="pill" data-val="Cash" onclick="pickOne(this)">Cash</div>
-        <div class="pill" data-val="Check" onclick="pickOne(this)">Check</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="fcard">
-    <div class="fcard-title">Use &amp; Priorities</div>
-    <div class="plabel">How they'll use it</div>
+    <div class="plabel" style="margin-top:16px">How they'll use it</div>
     <div class="pills" id="use-pills">
       <div class="pill" data-val="commute" onclick="this.classList.toggle('on')">Daily commute</div>
       <div class="pill" data-val="highway" onclick="this.classList.toggle('on')">Highway miles</div>
@@ -379,9 +343,41 @@ table.inv-table tr:hover td{background:var(--surface2);}
   </div>
 
   <div class="fcard">
+    <div class="fcard-title">Payment &amp; Credit</div>
+    <div class="field"><label>How's their credit? (1–10)</label>
+      <div class="credit-row">
+        <input type="range" id="ccredit" min="1" max="10" step="1" value="5" class="credit-range" oninput="updateCredit()">
+        <span class="credit-readout" id="credit-readout">5 · Average</span>
+      </div>
+      <div class="credit-scale"><span>1 · Bad</span><span>Average</span><span>Good · 10</span></div>
+      <div class="pills" style="margin-top:10px"><div class="pill" id="credit-unsure" data-val="unsure" onclick="this.classList.toggle('on');updateCredit()">Not sure</div></div>
+    </div>
+    <div class="stepper-grid" style="margin-top:18px">
+      <div><div class="slabel">Target Monthly</div>
+        <div class="stepper"><div class="sbtn" onclick="step('mo',-50)">−</div><div class="sval" id="vmo">$450</div><div class="sbtn" onclick="step('mo',50)">+</div></div>
+      </div>
+      <div><div class="slabel">Most Down Today</div>
+        <div class="stepper"><div class="sbtn" onclick="step('dn',-500)">−</div><div class="sval" id="vdn">$0</div><div class="sbtn" onclick="step('dn',500)">+</div></div>
+      </div>
+    </div>
+    <div class="field" style="margin-top:12px"><label>Paying that down with</label>
+      <div class="pills" id="q-pay">
+        <div class="pill" data-val="CC" onclick="pickOne(this)">Credit card</div>
+        <div class="pill" data-val="Cash" onclick="pickOne(this)">Cash</div>
+        <div class="pill" data-val="Check" onclick="pickOne(this)">Check</div>
+      </div>
+    </div>
+    <div class="range-bar">
+      Range: <strong id="rb-range">$350 – $550/mo</strong> &nbsp;·&nbsp;
+      Est. max vehicle: <strong id="rb-max">$29,593</strong>
+      <span style="font-size:11px">incl. 6% PA tax</span>
+    </div>
+  </div>
+
+  <div class="fcard">
     <div class="fcard-title">Commitment</div>
     <div class="yn-row"><span class="yn-q">If the numbers are right, taking the vehicle home today?</span><div class="yn-pills" id="q-today"><div class="pill" data-val="yes" onclick="pickOne(this)">Yes</div><div class="pill" data-val="no" onclick="pickOne(this)">No</div></div></div>
-    <div class="yn-row"><span class="yn-q">Open to a different vehicle based on credit?</span><div class="yn-pills" id="q-diff"><div class="pill" data-val="yes" onclick="pickOne(this)">Yes</div><div class="pill" data-val="no" onclick="pickOne(this)">No</div></div></div>
+    <div class="yn-row"><span class="yn-q">Open to a different vehicle based on credit?</span><div class="yn-pills" id="q-diff"><div class="pill" data-val="yes" onclick="pickOne(this)">Yes</div><div class="pill" data-val="no" onclick="pickOne(this)">No</div><div class="pill" data-val="na" onclick="pickOne(this)">N/A</div></div></div>
   </div>
 
   <div class="fcard">
@@ -399,7 +395,7 @@ table.inv-table tr:hover td{background:var(--surface2);}
     <textarea id="cnotes" placeholder="Anything from the conversation — specific models they asked about, colors they like, dealbreakers, what they're coming from, timeline…"></textarea>
   </div>
 
-  <button class="btn-gold" id="btnfind" onclick="runMatch()">Find 10 best matches</button>
+  <button class="btn-gold" id="btnfind" onclick="runMatch()">Find best matches</button>
   <div id="match-out" style="margin-top:20px;"></div>
 
   <!-- Save bar — shown after results -->
@@ -607,6 +603,7 @@ table.inv-table tr:hover td{background:var(--surface2);}
 let mo=450, rng=100, dn=0;
 let apiKey = localStorage.getItem('dc_api')||'';
 let lastMatches = [];   // current match results
+let matchCtx = null;    // reusable context for "find additional"
 let pendingSave = null; // customer object ready to save
 let editIdx = null;     // which customer is open in modal
 let modalDown = 500;    // deal calc down payment in modal
@@ -907,9 +904,7 @@ async function runMatch(){
   document.getElementById('match-out').innerHTML='<div class="spin-wrap"><div class="spinner"></div><p style="color:var(--muted)">Searching '+pool.length+' vehicles…</p></div>';
 
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,messages:[{role:'user',content:`You are a Del Chevrolet vehicle sales assistant. Find the 10 best matches.
-
-CUSTOMER: ${name}${email?' | '+email:''}
+    const head=`CUSTOMER: ${name}${email?' | '+email:''}
 FINANCING: ${finance||'not specified'} | HOUSEHOLD: ${house?house+' person(s)':'not specified'}
 TARGET: $${target}/mo | Down: $${dn} | ~Vehicle near target: $${maxV.toLocaleString()} incl. 6% PA tax | Term: ${TERM()}mo
 USE: ${use.join(', ')||'not specified'} | PRIORITIES: ${pri.join(', ')||'not specified'}
@@ -917,38 +912,27 @@ IDEAL VEHICLE (their words): ${idealCar||'not specified'}
 MUST-HAVE: ${mustHave||'none stated'} | NICE-TO-HAVE: ${niceToHave||'none stated'} | COLOR: ${colorPref||'any'}
 CREDIT (self-rated 1-10): ${creditRating}${creditUnsure?'':' ('+creditBand+')'} | TRADE-IN: ${hasTrade==='yes'?(tradeYMM||'yes — details TBD'):'none'}
 WHAT BROUGHT THEM IN: ${brings||'not specified'}
-NOTES: ${notes||'none'}
+NOTES: ${notes||'none'}`;
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,messages:[{role:'user',content:`You are a Del Chevrolet vehicle sales assistant. Find the 6 best matches.
+
+${head}
 
 INVENTORY (${pool.length} vehicles):
 ${invText}
 
-Rank 1–10. Include both new AND used. For used, mention mileage and value. Write 2–4 sentences per match tied to this specific customer. Be conversational. Treat MUST-HAVE items as hard requirements, honor the color preference where possible, and if a trade-in is present factor that it lowers effective cost. Do NOT state specific prices, MSRP, or monthly payment dollar amounts in the reasons; speak to fit, features, lifestyle and value (budget fit is shown visually).
+Rank 1–6. Include both new AND used. For used, mention mileage and value. Write 2–4 sentences per match tied to this specific customer. Be conversational. Treat MUST-HAVE items as hard requirements, honor the color preference where possible, and if a trade-in is present factor that it lowers effective cost. Do NOT state specific prices, MSRP, or monthly payment dollar amounts in the reasons; speak to fit, features, lifestyle and value (budget fit is shown visually).
 
 JSON only: {"summary":"one sentence","matches":[{"rank":1,"stock":"","title":"","subtitle":"Stock #XXXXX · Color","reason":"","tags":[""],"price_display":"$XX,XXX"}]}`}]})});
     const data=await res.json();
     if(data.error)throw new Error(data.error.message);
     const r=JSON.parse(data.content[0].text.trim().replace(/```json|```/g,'').trim());
     lastMatches=r.matches||[];
+    matchCtx={head,invText,name,target,dn,shown:new Set(lastMatches.map(m=>m.stock))};
     const uc=lastMatches.filter(m=>ALL[m.stock]?.type==='used').length;
-    let html=`<div class="res-header"><div><div class="res-title">${lastMatches.length} Matches for ${esc(name)}</div><div class="res-sub">${esc(r.summary||'')} · ${uc} used, ${lastMatches.length-uc} new</div></div></div><div class="res-grid">`;
-    lastMatches.forEach((m,i)=>{
-      const v=ALL[m.stock];const isU=v?.type==='used';
-      const badges=isU?`<span class="badge b-used">USED</span>${v?.cert?'<span class="badge b-cert">✓ Car Bravo Cert</span>':''}` :`<span class="badge b-new">NEW ${v?.year||2026}</span>`;
-      const miTag=isU&&v?.miles?`<span class="tag">${v.miles.toLocaleString()} mi</span>`:'';
-      const certTag=isU&&v?.cert?`<span class="tag p">Car Bravo</span>`:'';
-      html+=`<div class="rcard ${i===0?'best':''}">
-        <div class="rcard-top">
-          <button class="star-btn" id="star-${m.stock}" onclick="toggleStar('${m.stock}',this)" title="Star to save with customer">☆ Save</button>
-          <div class="rank-badge ${budgetColor(v?Math.round((v.msrp-dn)/TERM()):0,target)}">${i===0?'BEST MATCH':'#'+(i+1)}</div>
-        </div>
-        <div class="badge-row">${badges}</div>
-        <div class="rcard-title">${esc(m.title)}</div>
-        <div class="rcard-sub">${esc(m.subtitle)}</div>
-        <div class="rcard-body">${esc(m.reason)}</div>
-        <div class="tag-row">${miTag}${certTag}${(m.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
-      </div>`;
-    });
+    let html=`<div class="res-header"><div><div class="res-title">${lastMatches.length} Matches for ${esc(name)}</div><div class="res-sub">${esc(r.summary||'')} · ${uc} used, ${lastMatches.length-uc} new</div></div></div><div class="res-grid" id="res-grid">`;
+    lastMatches.forEach((m,i)=>{html+=matchCard(m,i);});
     html+='</div>';
+    html+=`<div id="more-wrap" style="margin-top:16px;text-align:center"><button class="btn-outline" id="btnmore" onclick="runMore()">None quite right? Find additional matches</button></div>`;
     document.getElementById('match-out').innerHTML=html;
     // Build pending save object
     pendingSave={name,email,finance,house,budgetLo:target,budgetHi:target,down:dn,term:TERM(),use,priorities:pri,notes,details,favorites:[],picks:lastMatches.map(m=>({stock:m.stock,title:m.title,subtitle:m.subtitle,reason:m.reason,price_display:m.price_display,tags:m.tags})),analysis:r.summary||'',aiNotes:'',date:new Date().toLocaleString()};
@@ -957,6 +941,62 @@ JSON only: {"summary":"one sentence","matches":[{"rank":1,"stock":"","title":"",
   }catch(e){
     document.getElementById('match-out').innerHTML=`<div style="text-align:center;padding:40px;color:var(--red)">${esc(e.message)}</div>`;
   }finally{btn.disabled=false;}
+}
+
+// ── MATCH CARD + FIND ADDITIONAL ──────────────────────────────────────────────
+function matchCard(m,i){
+  const v=ALL[m.stock];const isU=v?.type==='used';
+  const badges=isU?`<span class="badge b-used">USED</span>${v?.cert?'<span class="badge b-cert">✓ Car Bravo Cert</span>':''}`:`<span class="badge b-new">NEW ${v?.year||2026}</span>`;
+  const miTag=isU&&v?.miles?`<span class="tag">${v.miles.toLocaleString()} mi</span>`:'';
+  const certTag=isU&&v?.cert?`<span class="tag p">Car Bravo</span>`:'';
+  const est=v?Math.round((v.msrp-matchCtx.dn)/TERM()):0;
+  return `<div class="rcard ${i===0?'best':''}">
+    <div class="rcard-top">
+      <button class="star-btn" id="star-${m.stock}" onclick="toggleStar('${m.stock}',this)" title="Star to save with customer">☆ Save</button>
+      <div class="rank-badge ${budgetColor(est,matchCtx.target)}">${i===0?'BEST MATCH':'#'+(i+1)}</div>
+    </div>
+    <div class="badge-row">${badges}</div>
+    <div class="rcard-title">${esc(m.title)}</div>
+    <div class="rcard-sub">${esc(m.subtitle)}</div>
+    <div class="rcard-body">${esc(m.reason)}</div>
+    <div class="tag-row">${miTag}${certTag}${(m.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+  </div>`;
+}
+
+async function runMore(){
+  if(!matchCtx)return;
+  const btn=document.getElementById('btnmore');
+  if(btn){btn.disabled=true;btn.textContent='Finding more…';}
+  try{
+    const exclude=[...matchCtx.shown].join(', ');
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,messages:[{role:'user',content:`You are a Del Chevrolet vehicle sales assistant. The customer has already seen some matches and wants different options. Find 6 MORE strong matches they have NOT seen yet.
+
+${matchCtx.head}
+
+ALREADY SHOWN — never repeat these stock numbers: ${exclude}
+
+INVENTORY:
+${matchCtx.invText}
+
+Rank these 6 fresh options. Include both new AND used. Write 2–4 sentences per match tied to this customer. Be conversational. Treat MUST-HAVE items as hard requirements, honor color where possible, factor any trade-in. Do NOT state specific prices, MSRP, or monthly payment dollar amounts. Only use stock numbers from the inventory above, and never repeat an already-shown stock.
+
+JSON only: {"matches":[{"rank":1,"stock":"","title":"","subtitle":"Stock #XXXXX · Color","reason":"","tags":[""],"price_display":"$XX,XXX"}]}`}]})});
+    const data=await res.json();
+    if(data.error)throw new Error(data.error.message);
+    const r=JSON.parse(data.content[0].text.trim().replace(/```json|```/g,'').trim());
+    const more=(r.matches||[]).filter(m=>m.stock&&!matchCtx.shown.has(m.stock));
+    if(!more.length){if(btn){btn.disabled=true;btn.textContent='No more strong matches found';}return;}
+    const start=lastMatches.length;
+    const grid=document.getElementById('res-grid');
+    more.forEach((m,j)=>{matchCtx.shown.add(m.stock);grid.insertAdjacentHTML('beforeend',matchCard(m,start+j));});
+    lastMatches=lastMatches.concat(more);
+    if(pendingSave)pendingSave.picks=lastMatches.map(m=>({stock:m.stock,title:m.title,subtitle:m.subtitle,reason:m.reason,price_display:m.price_display,tags:m.tags}));
+    const rt=document.querySelector('#match-out .res-title');if(rt)rt.textContent=lastMatches.length+' Matches for '+esc(matchCtx.name);
+    if(btn){btn.disabled=false;btn.textContent='Still not it? Find more';}
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent='None quite right? Find additional matches';}
+    showToast('Could not load more: '+e.message,'#c0392b');
+  }
 }
 
 // ── STAR / FAVORITE ───────────────────────────────────────────────────────────
@@ -1003,7 +1043,7 @@ function newCustomer(){
   mo=450;rng=100;dn=0;updateBar();
   document.getElementById('match-out').innerHTML='';
   document.getElementById('save-bar').style.display='none';
-  lastMatches=[];pendingSave=null;
+  lastMatches=[];pendingSave=null;matchCtx=null;
   window.scrollTo({top:0,behavior:'smooth'});
 }
 

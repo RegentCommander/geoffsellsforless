@@ -258,6 +258,17 @@ table.inv-table tr:hover td{background:var(--surface2);}
 .pl-reopen{flex:1;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px;font-size:11px;cursor:pointer;}
 .pl-reopen:hover{border-color:var(--gold);color:var(--gold);}
 .pl-empty{font-size:11px;color:var(--muted);text-align:center;padding:14px 4px;border:1px dashed var(--border);border-radius:8px;opacity:.55;}
+/* ── DISCOVERY SHEET ── */
+.credit-row{display:flex;align-items:center;gap:12px;margin-top:6px;}
+.credit-range{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:5px;background:linear-gradient(90deg,#c0392b,#c8a84b,#00b050);outline:none;}
+.credit-range::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--gold);border:2px solid var(--bg);cursor:pointer;}
+.credit-range::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--gold);border:2px solid var(--bg);cursor:pointer;}
+.credit-readout{font-size:13px;font-weight:700;color:var(--gold);white-space:nowrap;min-width:96px;text-align:right;}
+.credit-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:5px;}
+.yn-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.yn-row:last-child{border-bottom:none;}
+.yn-q{font-size:13px;color:var(--text);flex:1;}
+.yn-pills{display:flex;gap:6px;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -282,6 +293,7 @@ table.inv-table tr:hover td{background:var(--surface2);}
     <div class="fcard-title">Customer</div>
     <div class="g2">
       <div class="field"><label>Name</label><input type="text" id="cname" placeholder="First & last"></div>
+      <div class="field"><label>Address</label><input type="text" id="caddress" placeholder="City / area is fine"></div>
       <div class="field"><label>Email</label><input type="email" id="cemail" placeholder="For follow-up draft"></div>
       <div class="field"><label>Financing?</label>
         <select id="cfinance">
@@ -301,7 +313,18 @@ table.inv-table tr:hover td{background:var(--surface2);}
   </div>
 
   <div class="fcard">
-    <div class="fcard-title">Payment Details</div>
+    <div class="fcard-title">Discovery</div>
+    <div class="field"><label>What brings you in today?</label><input type="text" id="dbrings" placeholder="What prompted the visit"></div>
+    <div class="field" style="margin-top:12px"><label>Ideal vehicle (their words)</label><input type="text" id="dideal" placeholder="e.g. a roomy SUV for road trips"></div>
+    <div class="g2" style="margin-top:12px">
+      <div class="field"><label>Must-have</label><input type="text" id="dmust" placeholder="Dealbreakers"></div>
+      <div class="field"><label>Nice-to-have</label><input type="text" id="dnice" placeholder="Bonuses"></div>
+    </div>
+    <div class="field" style="margin-top:12px"><label>Color preference</label><input type="text" id="dcolor" placeholder="Any color wishes"></div>
+  </div>
+
+  <div class="fcard">
+    <div class="fcard-title">Payment &amp; Credit</div>
     <div class="stepper-grid">
       <div><div class="slabel">Target Monthly</div>
         <div class="stepper"><div class="sbtn" onclick="step('mo',-50)">−</div><div class="sval" id="vmo">$450</div><div class="sbtn" onclick="step('mo',50)">+</div></div>
@@ -314,6 +337,21 @@ table.inv-table tr:hover td{background:var(--surface2);}
       Range: <strong id="rb-range">$350 – $550/mo</strong> &nbsp;·&nbsp;
       Est. max vehicle: <strong id="rb-max">$29,593</strong>
       <span style="font-size:11px">incl. 6% PA tax</span>
+    </div>
+    <div class="field" style="margin-top:16px"><label>How's their credit? (1–10)</label>
+      <div class="credit-row">
+        <input type="range" id="ccredit" min="1" max="10" step="1" value="5" class="credit-range" oninput="updateCredit()">
+        <span class="credit-readout" id="credit-readout">5 · Average</span>
+      </div>
+      <div class="credit-scale"><span>1 · Bad</span><span>Average</span><span>Good · 10</span></div>
+      <div class="pills" style="margin-top:10px"><div class="pill" id="credit-unsure" data-val="unsure" onclick="this.classList.toggle('on');updateCredit()">Not sure</div></div>
+    </div>
+    <div class="field" style="margin-top:14px"><label>Most they can put down today — by</label>
+      <div class="pills" id="q-pay">
+        <div class="pill" data-val="CC" onclick="pickOne(this)">Credit card</div>
+        <div class="pill" data-val="Cash" onclick="pickOne(this)">Cash</div>
+        <div class="pill" data-val="Check" onclick="pickOne(this)">Check</div>
+      </div>
     </div>
   </div>
 
@@ -338,6 +376,22 @@ table.inv-table tr:hover td{background:var(--surface2);}
       <div class="pill" data-val="lowpay" onclick="this.classList.toggle('on')">Low payment</div>
       <div class="pill" data-val="ev" onclick="this.classList.toggle('on')">EV / hybrid</div>
     </div>
+  </div>
+
+  <div class="fcard">
+    <div class="fcard-title">Commitment</div>
+    <div class="yn-row"><span class="yn-q">If the numbers are right, taking the vehicle home today?</span><div class="yn-pills" id="q-today"><div class="pill" data-val="yes" onclick="pickOne(this)">Yes</div><div class="pill" data-val="no" onclick="pickOne(this)">No</div></div></div>
+    <div class="yn-row"><span class="yn-q">Open to a different vehicle based on credit?</span><div class="yn-pills" id="q-diff"><div class="pill" data-val="yes" onclick="pickOne(this)">Yes</div><div class="pill" data-val="no" onclick="pickOne(this)">No</div></div></div>
+  </div>
+
+  <div class="fcard">
+    <div class="fcard-title">Trade-in</div>
+    <div class="yn-row"><span class="yn-q">Is there a trade?</span><div class="yn-pills" id="q-trade"><div class="pill" data-val="yes" onclick="pickOne(this)">Yes</div><div class="pill" data-val="no" onclick="pickOne(this)">No</div></div></div>
+    <div class="g2" style="margin-top:12px">
+      <div class="field"><label>Year / Make / Model</label><input type="text" id="tymm" placeholder="e.g. 2019 Honda CR-V"></div>
+      <div class="field"><label>Name on trade</label><input type="text" id="tname" placeholder="If different"></div>
+    </div>
+    <div class="yn-row" style="margin-top:4px"><span class="yn-q">Title in hand?</span><div class="yn-pills" id="q-title"><div class="pill" data-val="yes" onclick="pickOne(this)">Yes</div><div class="pill" data-val="no" onclick="pickOne(this)">No</div></div></div>
   </div>
 
   <div class="fcard">
@@ -817,6 +871,25 @@ async function runMatch(){
   document.querySelectorAll('#use-pills .pill.on').forEach(p=>use.push(p.dataset.val));
   document.querySelectorAll('#pri-pills .pill.on').forEach(p=>pri.push(p.dataset.val));
 
+  const val1=id=>{const e=document.querySelector('#'+id+' .pill.on');return e?e.dataset.val:'';};
+  const address=document.getElementById('caddress').value.trim();
+  const brings=document.getElementById('dbrings').value.trim();
+  const idealCar=document.getElementById('dideal').value.trim();
+  const mustHave=document.getElementById('dmust').value.trim();
+  const niceToHave=document.getElementById('dnice').value.trim();
+  const colorPref=document.getElementById('dcolor').value.trim();
+  const creditUnsure=document.getElementById('credit-unsure').classList.contains('on');
+  const creditRating=creditUnsure?'Not sure':String(document.getElementById('ccredit').value);
+  const creditBand=creditUnsure?'unsure':(+creditRating<=3?'Bad':+creditRating<=6?'Average':+creditRating<=9?'Good':'Excellent');
+  const payMethod=val1('q-pay');
+  const takeHomeToday=val1('q-today');
+  const willingDifferent=val1('q-diff');
+  const hasTrade=val1('q-trade');
+  const tradeYMM=document.getElementById('tymm').value.trim();
+  const tradeName=document.getElementById('tname').value.trim();
+  const tradeTitle=val1('q-title');
+  const details={address,brings,idealCar,mustHave,niceToHave,colorPref,creditRating,payMethod,takeHomeToday,willingDifferent,trade:{has:hasTrade,ymm:tradeYMM,name:tradeName,title:tradeTitle}};
+
   const pool=Object.values(ALL).filter(v=>{
     if(house==='5'&&v.seats<7)return false;
     if(pri.includes('awd')&&!v.awd)return false;
@@ -840,12 +913,16 @@ CUSTOMER: ${name}${email?' | '+email:''}
 FINANCING: ${finance||'not specified'} | HOUSEHOLD: ${house?house+' person(s)':'not specified'}
 TARGET: $${target}/mo | Down: $${dn} | ~Vehicle near target: $${maxV.toLocaleString()} incl. 6% PA tax | Term: ${TERM()}mo
 USE: ${use.join(', ')||'not specified'} | PRIORITIES: ${pri.join(', ')||'not specified'}
+IDEAL VEHICLE (their words): ${idealCar||'not specified'}
+MUST-HAVE: ${mustHave||'none stated'} | NICE-TO-HAVE: ${niceToHave||'none stated'} | COLOR: ${colorPref||'any'}
+CREDIT (self-rated 1-10): ${creditRating}${creditUnsure?'':' ('+creditBand+')'} | TRADE-IN: ${hasTrade==='yes'?(tradeYMM||'yes — details TBD'):'none'}
+WHAT BROUGHT THEM IN: ${brings||'not specified'}
 NOTES: ${notes||'none'}
 
 INVENTORY (${pool.length} vehicles):
 ${invText}
 
-Rank 1–10. Include both new AND used. For used, mention mileage and value. Write 2–4 sentences per match tied to this specific customer. Be conversational. Do NOT state specific prices, MSRP, or monthly payment dollar amounts in the reasons; speak to fit, features, lifestyle and value (budget fit is shown visually).
+Rank 1–10. Include both new AND used. For used, mention mileage and value. Write 2–4 sentences per match tied to this specific customer. Be conversational. Treat MUST-HAVE items as hard requirements, honor the color preference where possible, and if a trade-in is present factor that it lowers effective cost. Do NOT state specific prices, MSRP, or monthly payment dollar amounts in the reasons; speak to fit, features, lifestyle and value (budget fit is shown visually).
 
 JSON only: {"summary":"one sentence","matches":[{"rank":1,"stock":"","title":"","subtitle":"Stock #XXXXX · Color","reason":"","tags":[""],"price_display":"$XX,XXX"}]}`}]})});
     const data=await res.json();
@@ -874,7 +951,7 @@ JSON only: {"summary":"one sentence","matches":[{"rank":1,"stock":"","title":"",
     html+='</div>';
     document.getElementById('match-out').innerHTML=html;
     // Build pending save object
-    pendingSave={name,email,finance,house,budgetLo:target,budgetHi:target,down:dn,term:TERM(),use,priorities:pri,notes,favorites:[],picks:lastMatches.map(m=>({stock:m.stock,title:m.title,subtitle:m.subtitle,reason:m.reason,price_display:m.price_display,tags:m.tags})),analysis:r.summary||'',aiNotes:'',date:new Date().toLocaleString()};
+    pendingSave={name,email,finance,house,budgetLo:target,budgetHi:target,down:dn,term:TERM(),use,priorities:pri,notes,details,favorites:[],picks:lastMatches.map(m=>({stock:m.stock,title:m.title,subtitle:m.subtitle,reason:m.reason,price_display:m.price_display,tags:m.tags})),analysis:r.summary||'',aiNotes:'',date:new Date().toLocaleString()};
     document.getElementById('save-bar').style.display='flex';
     document.getElementById('match-out').scrollIntoView({behavior:'smooth'});
   }catch(e){
@@ -918,15 +995,32 @@ async function saveCustomer(){
 }
 
 function newCustomer(){
-  ['cname','cemail','cnotes'].forEach(id=>document.getElementById(id).value='');
+  ['cname','cemail','cnotes','caddress','dbrings','dideal','dmust','dnice','dcolor','tymm','tname'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cfinance').value='';
   document.getElementById('chouse').value='';
   document.querySelectorAll('.pill').forEach(p=>p.classList.remove('on'));
+  document.getElementById('ccredit').value=5;updateCredit();
   mo=450;rng=100;dn=0;updateBar();
   document.getElementById('match-out').innerHTML='';
   document.getElementById('save-bar').style.display='none';
   lastMatches=[];pendingSave=null;
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── DISCOVERY SHEET HELPERS ──────────────────────────────────────────────────
+function pickOne(el){
+  const grp=el.parentElement.querySelectorAll('.pill');
+  const was=el.classList.contains('on');
+  grp.forEach(s=>s.classList.remove('on'));
+  if(!was)el.classList.add('on');
+}
+function updateCredit(){
+  const unsure=document.getElementById('credit-unsure').classList.contains('on');
+  const v=+document.getElementById('ccredit').value;
+  const ro=document.getElementById('credit-readout');
+  if(unsure){ro.textContent='Not sure';return;}
+  const band=v<=3?'Bad':v<=6?'Average':v<=9?'Good':'Excellent';
+  ro.textContent=v+' · '+band;
 }
 
 // ── PIPELINE / CRM ────────────────────────────────────────────────────────────

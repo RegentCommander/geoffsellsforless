@@ -404,6 +404,7 @@ table.inv-table tr:hover td{background:var(--surface2);}
   <div class="save-bar" id="save-bar" style="display:none;">
     <span style="font-size:12px;color:var(--muted);white-space:nowrap;">Save this customer?</span>
     <button class="btn-save-customer" onclick="saveCustomer()">Save &amp; continue</button>
+    <button class="btn-outline" onclick="printSheet(pendingSave)">🖨 Print sheet</button>
     <button class="btn-outline" onclick="newCustomer()">Skip &amp; new customer</button>
   </div>
 </div>
@@ -581,6 +582,7 @@ table.inv-table tr:hover td{background:var(--surface2);}
       <div class="cmodal-name" id="m-name">—</div>
       <div class="cmodal-date" id="m-date"></div>
     </div>
+    <button class="btn-back" onclick="printSheet(customerCache[editIdx])" style="margin-right:8px">🖨 Print</button>
     <button class="btn-modal-save" onclick="saveModalChanges()">Save</button>
   </div>
   <div id="m-body"></div>
@@ -886,6 +888,87 @@ U.forEach(v=>ALL[v[0]]={stock:v[0],year:v[1],make:v[2],model:v[3],trim:v[4],dt:v
 
 // ── MATCH ─────────────────────────────────────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── PRINT / PDF DISCOVERY SHEET ───────────────────────────────────────────────
+function printSheet(c){
+  if(!c){showToast('Nothing to print yet','#c0392b');return;}
+  const d=c.details||{}, tr=d.trade||{};
+  const E=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const cr=d.creditRating;
+  const creditNum=(cr==='Not sure'||cr==null||cr==='')?null:Number(cr);
+  const notSure=cr==='Not sure';
+  const band=creditNum==null?'':(creditNum<=3?'Bad':creditNum<=6?'Average':'Good');
+  const yn=(val,opts)=>opts.map(o=>`<span class="opt${String(val||'').toLowerCase()===o.toLowerCase()?' on':''}">${o}</span>`).join('');
+  const credStrip=[1,2,3,4,5,6,7,8,9,10].map(n=>`<span class="cn${n===creditNum?' on':''}">${n}</span>`).join('');
+  const budget=c.budgetLo?('$'+Number(c.budgetLo).toLocaleString()+'/mo'):'';
+  const down=(c.down||c.down===0)?('$'+Number(c.down||0).toLocaleString()):'';
+  const win=window.open('','_blank','width=840,height=1100');
+  if(!win){showToast('Allow pop-ups to print the sheet','#c0392b');return;}
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Discovery Sheet${c.name?' — '+E(c.name):''}</title>
+<style>
+*{box-sizing:border-box;}
+body{font-family:Arial,Helvetica,sans-serif;color:#000;margin:0;padding:28px;background:#fff;}
+.sheet{max-width:740px;margin:0 auto;}
+h1{text-align:center;font-size:17px;letter-spacing:2px;margin:0 0 2px;}
+.subtitle{text-align:center;font-size:10px;color:#555;margin:0 0 16px;text-transform:uppercase;letter-spacing:1px;}
+table{border-collapse:collapse;width:100%;}
+.grid{border:1.5px solid #000;}
+.cell{border:1px solid #000;padding:8px 10px;vertical-align:top;}
+.lbl{font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.5px;color:#222;}
+.val{font-size:13px;margin-top:6px;min-height:18px;}
+.box{border:1.5px solid #000;margin-top:13px;padding:10px 12px;}
+.box .lbl{font-size:10px;}
+.box .val{min-height:22px;}
+.opt{display:inline-block;padding:2px 12px;margin-right:8px;border:1px solid #bbb;border-radius:14px;font-size:11px;}
+.opt.on{border:1.5px solid #000;font-weight:bold;background:#eee;}
+.credit-strip{display:flex;gap:6px;margin:8px 0 7px;}
+.cn{width:26px;height:26px;line-height:23px;text-align:center;border:1px solid #bbb;border-radius:50%;font-size:12px;}
+.cn.on{border:2px solid #000;font-weight:bold;background:#eee;}
+.credit-labels{display:flex;gap:26px;font-size:10px;color:#555;}
+.credit-labels .on{font-weight:bold;color:#000;text-decoration:underline;}
+.initials{width:150px;border-left:1px solid #000;font-size:9px;font-weight:bold;text-transform:uppercase;color:#222;text-align:center;vertical-align:middle;}
+.sig{display:flex;justify-content:space-between;margin-top:34px;gap:48px;}
+.sig div{flex:1;border-top:1px solid #000;padding-top:5px;font-size:10px;text-transform:uppercase;color:#555;text-align:center;}
+@media print{body{padding:0;}@page{margin:14mm;}}
+</style></head><body><div class="sheet">
+<h1>DEL CHEVROLET</h1>
+<div class="subtitle">Customer Discovery Sheet${c.date?' · '+E(c.date):''}</div>
+<table class="grid"><tr>
+<td class="cell" style="width:50%"><div class="lbl">Customer Name</div><div class="val">${E(c.name)}</div></td>
+<td class="cell" style="width:50%"><div class="lbl">Customer Address</div><div class="val">${E(d.address)}</div></td>
+</tr></table>
+<div class="box"><div class="lbl">What brings you in today?</div><div class="val">${E(d.brings)}</div></div>
+<div class="box"><div class="lbl">What is the ideal car?</div><div class="val">${E(d.idealCar)}</div>
+<table class="grid" style="margin-top:10px"><tr>
+<td class="cell" style="width:50%"><div class="lbl">Must have</div><div class="val">${E(d.mustHave)}</div></td>
+<td class="cell" style="width:50%"><div class="lbl">Nice to have</div><div class="val">${E(d.niceToHave)}</div></td>
+</tr></table>
+<div style="margin-top:10px"><div class="lbl">Color preference</div><div class="val">${E(d.colorPref)}</div></div>
+</div>
+<div class="box"><div class="lbl">How's your credit? (1–10)</div>
+<div class="credit-strip">${credStrip}</div>
+<div class="credit-labels"><span class="${band==='Bad'?'on':''}">Bad</span><span class="${band==='Average'?'on':''}">Average</span><span class="${band==='Good'?'on':''}">Good</span><span class="${notSure?'on':''}">Not sure</span></div>
+</div>
+<div class="box"><div class="lbl">What's your monthly budget?</div><div class="val">${E(budget)}</div></div>
+<table class="grid" style="margin-top:13px">
+<tr><td class="cell"><div class="lbl">If the numbers are right, taking the right vehicle home today?</div><div class="val">${yn(d.takeHomeToday,['Yes','No'])}</div></td><td class="cell initials">Customer Initials</td></tr>
+<tr><td class="cell"><div class="lbl">Most money you can put down today?</div><div class="val">${E(down)} &nbsp;&nbsp;&nbsp; ${yn(d.payMethod,['CC','Cash','Check'])}</div></td><td class="cell initials">Customer Initials</td></tr>
+<tr><td class="cell"><div class="lbl">Based on credit, willing to take a different vehicle?</div><div class="val">${yn(d.willingDifferent,['Yes','No','N/A'])}</div></td><td class="cell initials">Customer Initials</td></tr>
+</table>
+<div class="box"><div class="lbl">Is there a trade?</div><div class="val">${yn(tr.has,['Yes','No'])}</div>
+<table class="grid" style="margin-top:10px"><tr>
+<td class="cell" style="width:40%"><div class="lbl">Year, Make, Model</div><div class="val">${E(tr.ymm)}</div></td>
+<td class="cell" style="width:35%"><div class="lbl">Name on trade</div><div class="val">${E(tr.name)}</div></td>
+<td class="cell" style="width:25%"><div class="lbl">Title?</div><div class="val">${yn(tr.title,['Yes','No'])}</div></td>
+</tr></table>
+</div>
+${c.notes?`<div class="box"><div class="lbl">Notes</div><div class="val">${E(c.notes)}</div></div>`:''}
+<div class="sig"><div>Sales Signature</div><div>Customer Signature</div></div>
+</div>
+<script>window.onload=function(){setTimeout(function(){window.print();},300);};<\/script>
+</body></html>`);
+  win.document.close();
+}
 
 async function runMatch(){
   if(!apiKey){openKeyModal();return;}

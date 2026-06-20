@@ -215,6 +215,7 @@ table.inv-table tr:hover td{background:var(--surface2);}
 .spin-wrap{text-align:center;padding:40px 20px;}
 .spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
 @keyframes spin{to{transform:rotate(360deg)}}
+.btn-spin{display:inline-block;width:15px;height:15px;border:2px solid rgba(13,17,23,.25);border-top-color:#0d1117;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:9px;}
 
 /* key modal */
 .koverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:center;justify-content:center;}
@@ -888,7 +889,7 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 
 async function runMatch(){
   if(!apiKey){openKeyModal();return;}
-  const btn=document.getElementById('btnfind');btn.disabled=true;
+  const btn=document.getElementById('btnfind');btn.disabled=true;btn.innerHTML='<span class="btn-spin"></span>Searching inventory…';
   lastMatches=[];pendingSave=null;
   document.getElementById('save-bar').style.display='none';
 
@@ -898,8 +899,6 @@ async function runMatch(){
   const house=document.getElementById('chouse').value;
   const notes=document.getElementById('cnotes').value.trim();
   const target=mo;
-  const apNew=aprPct(creditUnsure?'Not sure':creditRating,false);
-  const maxV=maxPriceFor(target,dn,apNew,TERM(),TAX());
   const use=[],pri=[];
   document.querySelectorAll('#use-pills .pill.on').forEach(p=>use.push(p.dataset.val));
   document.querySelectorAll('#pri-pills .pill.on').forEach(p=>pri.push(p.dataset.val));
@@ -914,6 +913,8 @@ async function runMatch(){
   const creditUnsure=document.getElementById('credit-unsure').classList.contains('on');
   const creditRating=creditUnsure?'Not sure':String(document.getElementById('ccredit').value);
   const creditBand=creditUnsure?'unsure':(+creditRating<=3?'Bad':+creditRating<=6?'Average':+creditRating<=9?'Good':'Excellent');
+  const apNew=aprPct(creditUnsure?'Not sure':creditRating,false);
+  const maxV=maxPriceFor(target,dn,apNew,TERM(),TAX());
   const payMethod=val1('q-pay');
   const takeHomeToday=val1('q-today');
   const willingDifferent=val1('q-diff');
@@ -976,7 +977,7 @@ JSON only: {"summary":"one sentence","matches":[{"rank":1,"stock":"","title":"",
     document.getElementById('match-out').scrollIntoView({behavior:'smooth'});
   }catch(e){
     document.getElementById('match-out').innerHTML=`<div style="text-align:center;padding:40px;color:var(--red)">${esc(e.message)}</div>`;
-  }finally{btn.disabled=false;}
+  }finally{btn.disabled=false;btn.innerHTML='Find best matches';}
 }
 
 // ── MATCH CARD + FIND ADDITIONAL ──────────────────────────────────────────────

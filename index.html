@@ -368,9 +368,10 @@ table.inv-table tr:hover td{background:var(--surface2);}
       </div>
     </div>
     <div class="range-bar">
-      Range: <strong id="rb-range">$350 – $550/mo</strong> &nbsp;·&nbsp;
-      Est. max vehicle: <strong id="rb-max">$29,593</strong>
-      <span style="font-size:11px">incl. 6% PA tax</span>
+      Target: <strong id="rb-range">$450/mo</strong> &nbsp;·&nbsp;
+      Est. max vehicle: <strong id="rb-max">$23,231</strong> &nbsp;·&nbsp;
+      <span id="rb-apr" style="font-size:11px">≈9.5% APR · 72mo</span>
+      <span style="font-size:11px">· incl. 6% PA tax</span>
     </div>
   </div>
 
@@ -642,6 +643,37 @@ function budgetColor(est,target){
   return 'bk-purple';                   // 55%+ over
 }
 
+// ── APR / PAYMENT MATH ────────────────────────────────────────────────────────
+// Estimated APR by self-rated credit (1-10), from national tier averages.
+// Planning estimate only — NOT a quote; real rate comes from the lender.
+function aprPct(rating,isUsed){
+  const r=(rating===''||rating==='Not sure'||rating==null)?5.5:Number(rating);
+  let n,u;
+  if(r>=9){n=5.0;u=7.0;}
+  else if(r>=7){n=6.5;u=9.0;}
+  else if(r>=5){n=9.5;u=13.5;}
+  else if(r>=3){n=13.0;u=18.5;}
+  else{n=16.0;u=21.5;}
+  return isUsed?u:n;
+}
+function creditRatingNow(){
+  if(document.getElementById('credit-unsure')?.classList.contains('on'))return 'Not sure';
+  return document.getElementById('ccredit')?.value||'5';
+}
+// Amortized monthly payment for a vehicle (tax financed, down applied pre-finance)
+function monthlyFor(price,down,apr,n,tax){
+  const financed=Math.max(0,price*(1+tax)-down);
+  const i=apr/100/12;
+  if(i<=0)return Math.round(financed/n);
+  return Math.round(financed*i/(1-Math.pow(1+i,-n)));
+}
+// Max pre-tax vehicle price affordable at a target monthly payment
+function maxPriceFor(monthly,down,apr,n,tax){
+  const i=apr/100/12;
+  const financed=i<=0?monthly*n:monthly*(1-Math.pow(1+i,-n))/i;
+  return Math.round((financed+down)/(1+tax));
+}
+
 // ── PAGES ────────────────────────────────────────────────────────────────────
 function showPage(p){
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
@@ -664,9 +696,12 @@ function step(w,d){
 function updateBar(){
   document.getElementById('vmo').textContent='$'+mo.toLocaleString();
   document.getElementById('vdn').textContent='$'+dn.toLocaleString();
-  const maxV=Math.round((mo*TERM()+dn)/(1+TAX()));
+  const ap=aprPct(creditRatingNow(),false);
+  const maxV=maxPriceFor(mo,dn,ap,TERM(),TAX());
   document.getElementById('rb-range').textContent='$'+mo.toLocaleString()+'/mo';
   document.getElementById('rb-max').textContent='$'+maxV.toLocaleString();
+  const aprEl=document.getElementById('rb-apr');
+  if(aprEl)aprEl.textContent='≈'+ap+'% APR · '+TERM()+'mo';
 }
 updateBar();
 
@@ -863,7 +898,8 @@ async function runMatch(){
   const house=document.getElementById('chouse').value;
   const notes=document.getElementById('cnotes').value.trim();
   const target=mo;
-  const maxV=Math.round((target*TERM()+dn)/(1+TAX()));
+  const apNew=aprPct(creditUnsure?'Not sure':creditRating,false);
+  const maxV=maxPriceFor(target,dn,apNew,TERM(),TAX());
   const use=[],pri=[];
   document.querySelectorAll('#use-pills .pill.on').forEach(p=>use.push(p.dataset.val));
   document.querySelectorAll('#pri-pills .pill.on').forEach(p=>pri.push(p.dataset.val));
@@ -896,7 +932,7 @@ async function runMatch(){
   });
 
   const invText=pool.map(v=>{
-    const est=Math.round((v.msrp-dn)/TERM());
+    const est=monthlyFor(v.msrp,dn,aprPct(creditUnsure?'Not sure':creditRating,v.type==='used'),TERM(),TAX());
     const attrs=[v.type==='used'?v.miles.toLocaleString()+' mi':'New '+v.year,v.awd?'AWD/4WD':'',v.ev?'EV':'',v.threeRow?'3rd row':'',v.tow?'Towing':'',v.cargo?'Cargo/Truck':'',v.cert?'CAR BRAVO CERT':'',v.type==='used'?v.status:''].filter(Boolean).join(', ');
     return `Stock#${v.stock}|${v.fullName}|${v.color}|$${v.msrp.toLocaleString()}(~$${est}/mo)|${attrs}`;
   }).join('\n');
@@ -910,7 +946,7 @@ TARGET: $${target}/mo | Down: $${dn} | ~Vehicle near target: $${maxV.toLocaleStr
 USE: ${use.join(', ')||'not specified'} | PRIORITIES: ${pri.join(', ')||'not specified'}
 IDEAL VEHICLE (their words): ${idealCar||'not specified'}
 MUST-HAVE: ${mustHave||'none stated'} | NICE-TO-HAVE: ${niceToHave||'none stated'} | COLOR: ${colorPref||'any'}
-CREDIT (self-rated 1-10): ${creditRating}${creditUnsure?'':' ('+creditBand+')'} | TRADE-IN: ${hasTrade==='yes'?(tradeYMM||'yes — details TBD'):'none'}
+CREDIT (self-rated 1-10): ${creditRating}${creditUnsure?'':' ('+creditBand+')'} — est ~${apNew}% APR (new) | TRADE-IN: ${hasTrade==='yes'?(tradeYMM||'yes — details TBD'):'none'}
 WHAT BROUGHT THEM IN: ${brings||'not specified'}
 NOTES: ${notes||'none'}`;
     const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,messages:[{role:'user',content:`You are a Del Chevrolet vehicle sales assistant. Find the 6 best matches.
@@ -927,7 +963,7 @@ JSON only: {"summary":"one sentence","matches":[{"rank":1,"stock":"","title":"",
     if(data.error)throw new Error(data.error.message);
     const r=JSON.parse(data.content[0].text.trim().replace(/```json|```/g,'').trim());
     lastMatches=r.matches||[];
-    matchCtx={head,invText,name,target,dn,shown:new Set(lastMatches.map(m=>m.stock))};
+    matchCtx={head,invText,name,target,dn,rating:creditUnsure?'Not sure':creditRating,shown:new Set(lastMatches.map(m=>m.stock))};
     const uc=lastMatches.filter(m=>ALL[m.stock]?.type==='used').length;
     let html=`<div class="res-header"><div><div class="res-title">${lastMatches.length} Matches for ${esc(name)}</div><div class="res-sub">${esc(r.summary||'')} · ${uc} used, ${lastMatches.length-uc} new</div></div></div><div class="res-grid" id="res-grid">`;
     lastMatches.forEach((m,i)=>{html+=matchCard(m,i);});
@@ -949,7 +985,7 @@ function matchCard(m,i){
   const badges=isU?`<span class="badge b-used">USED</span>${v?.cert?'<span class="badge b-cert">✓ Car Bravo Cert</span>':''}`:`<span class="badge b-new">NEW ${v?.year||2026}</span>`;
   const miTag=isU&&v?.miles?`<span class="tag">${v.miles.toLocaleString()} mi</span>`:'';
   const certTag=isU&&v?.cert?`<span class="tag p">Car Bravo</span>`:'';
-  const est=v?Math.round((v.msrp-matchCtx.dn)/TERM()):0;
+  const est=v?monthlyFor(v.msrp,matchCtx.dn,aprPct(matchCtx.rating,isU),TERM(),TAX()):0;
   return `<div class="rcard ${i===0?'best':''}">
     <div class="rcard-top">
       <button class="star-btn" id="star-${m.stock}" onclick="toggleStar('${m.stock}',this)" title="Star to save with customer">☆ Save</button>
@@ -1058,9 +1094,9 @@ function updateCredit(){
   const unsure=document.getElementById('credit-unsure').classList.contains('on');
   const v=+document.getElementById('ccredit').value;
   const ro=document.getElementById('credit-readout');
-  if(unsure){ro.textContent='Not sure';return;}
-  const band=v<=3?'Bad':v<=6?'Average':v<=9?'Good':'Excellent';
-  ro.textContent=v+' · '+band;
+  if(unsure){ro.textContent='Not sure';}
+  else{const band=v<=3?'Bad':v<=6?'Average':v<=9?'Good':'Excellent';ro.textContent=v+' · '+band;}
+  updateBar();
 }
 
 // ── PIPELINE / CRM ────────────────────────────────────────────────────────────
